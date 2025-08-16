@@ -1,15 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNet } from '../net/net';
 
 export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) {
   const net = useNet();
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Request room list when component mounts
     net.getRooms();
   }, [net]);
+
+  useEffect(() => {
+    // Auto-focus input when create room form is shown
+    if (showCreateRoom && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [showCreateRoom]);
 
   const handleJoinRoom = (roomId: string) => {
     net.joinRoom(roomId);
@@ -151,16 +161,26 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
               border: '1px solid rgba(16, 185, 129, 0.3)',
               borderRadius: 12,
               padding: 16,
-              marginBottom: 16
+              marginBottom: 16,
+              position: 'relative',
+              zIndex: 10,
+              pointerEvents: 'auto',
+              touchAction: 'auto'
             }}>
               <div style={{ marginBottom: 12, fontSize: '1rem', fontWeight: 'bold', color: '#10b981' }}>
                 🎮 Create Your Adventure Room
               </div>
               <input
+                ref={inputRef}
                 type="text"
                 value={newRoomName}
                 onChange={(e) => setNewRoomName(e.target.value)}
                 placeholder="Enter room name (3-30 characters)"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
+                inputMode="text"
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -168,15 +188,32 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
                   border: '1px solid rgba(255,255,255,0.2)',
                   borderRadius: 8,
                   color: '#fff',
-                  fontSize: '1rem',
+                  fontSize: window.innerWidth < 768 ? '16px' : '1rem', // 16px prevents zoom on iOS
                   marginBottom: 12,
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  WebkitAppearance: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                  outline: 'none',
+                  touchAction: 'manipulation',
+                  userSelect: 'text',
+                  WebkitUserSelect: 'text'
                 }}
                 maxLength={30}
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === 'Enter') {
+                    e.preventDefault();
                     handleCreateRoom();
                   }
+                }}
+                onFocus={(e) => {
+                  // Ensure input is visible on mobile
+                  setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 300);
+                }}
+                onTouchStart={(e) => {
+                  // Prevent event bubbling that might interfere with input
+                  e.stopPropagation();
                 }}
               />
               <div style={{ display: 'flex', gap: 8 }}>
