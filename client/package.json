@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run assets:compress && vite build",
+    "build:fast": "vite build",
     "preview": "vite preview --port 5173",
     "assets:report": "node ../tools/size-report.mjs client/public/assets || node tools/size-report.mjs client/public/assets",
+    "assets:compress": "node ../tools/compress-pipeline.mjs",
+    "assets:compress:force": "rm -rf dist-assets-compressed && npm run assets:compress",
     "size:check": "npm run build && node ../tools/size-report.mjs dist/assets",
-    "size:budget": "npm run build && node ../tools/check-budget.mjs dist/assets"
+    "size:budget": "npm run build && node ../tools/check-budget.mjs dist/assets",
+    "compress:test": "node ../tools/compress-pipeline.mjs && node ../tools/size-report.mjs dist-assets-compressed"
   },
   "dependencies": {
     "@react-three/drei": "^9.108.2",
@@ -20,6 +24,9 @@
     "three": "^0.160.0"
   },
   "devDependencies": {
+    "@gltf-transform/cli": "^4.1.2",
+    "@gltf-transform/core": "^4.1.2",
+    "@gltf-transform/functions": "^4.1.2",
     "@types/react-dom": "^19.1.7",
     "@types/three": "^0.179.0",
     "@vitejs/plugin-react": "^4.3.1",
