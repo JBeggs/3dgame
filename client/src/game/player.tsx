@@ -79,8 +79,8 @@ export function PlayerMesh() {
     }
     
     physics.step(dt);
-    // send network position (throttled inside net api)
-    net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z);
+    // send network position and rotation (throttled inside net api)
+    net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z, avatarRotationRef.current);
     // simple reconciliation: if server pos diverges a lot, snap toward it
     // TEMPORARILY DISABLED - causing respawn loop issue
     /*

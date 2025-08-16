@@ -20,6 +20,7 @@ import { useEffect } from 'react';
 import { Nameplate, idToColor } from './Nameplate';
 import { getPhysics } from '../game/physics';
 import { LobbyPanel } from './LobbyPanel';
+import { AvatarRoot } from '../avatar/Avatar';
 
 
 function Scene() {
@@ -45,6 +46,16 @@ function Scene() {
         const ix = prev.x + (p.x - prev.x) * alpha;
         const iy = prev.y + (p.y - prev.y) * alpha;
         const iz = prev.z + (p.z - prev.z) * alpha;
+        
+        // Interpolate rotation with proper angle wrapping
+        const prevRot = prev.rotation || 0;
+        const currRot = p.rotation || 0;
+        let rotDiff = currRot - prevRot;
+        // Handle angle wrapping (shortest rotation path)
+        if (rotDiff > Math.PI) rotDiff -= 2 * Math.PI;
+        if (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
+        const rotation = prevRot + rotDiff * alpha;
+        
         const color = idToColor(p.id);
         
         // Calculate distance from local player
@@ -54,13 +65,12 @@ function Scene() {
           Math.pow(iz - playerPos.z, 2)
         );
         
+        // rotation is now interpolated above
+        
         return (
           <group key={p.id} position={[ix, iy, iz]}>
-            {/* Player avatar/mesh */}
-            <mesh>
-              <sphereGeometry args={[0.25, 12, 12]} />
-              <meshStandardMaterial color={color} />
-            </mesh>
+            {/* Player avatar with proper rotation */}
+            <AvatarRoot rotation={rotation} />
             
             {/* Enhanced nameplate */}
             <Nameplate 

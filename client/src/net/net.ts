@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useSyncExternalStore } from 'react';
 
-type PlayerSnapshot = { id: number; x: number; y: number; z: number; name?: string };
+type PlayerSnapshot = { id: number; x: number; y: number; z: number; rotation?: number; name?: string };
 
 type Room = {
   id: string;
@@ -48,7 +48,7 @@ function emit() {
 
 export type NetAPI = {
   sendChat: (text: string) => void;
-  sendPosition: (x: number, y: number, z: number) => void;
+  sendPosition: (x: number, y: number, z: number, rotation?: number) => void;
   joinRoom: (room: string) => void;
   setPlayerName: (name: string) => void;
   getRooms: () => void;
@@ -192,12 +192,16 @@ const api: NetAPI = {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ t: 'chat', text }));
   },
-  sendPosition(x: number, y: number, z: number) {
+  sendPosition(x: number, y: number, z: number, rotation?: number) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     const now = performance.now();
     if (now - lastPosSent < 1000 / 10) return; // 10Hz
     lastPosSent = now;
-    ws.send(JSON.stringify({ t: 'pos', x, y, z }));
+    const data: any = { t: 'pos', x, y, z };
+    if (rotation !== undefined) {
+      data.rotation = rotation;
+    }
+    ws.send(JSON.stringify(data));
   },
   joinRoom(room: string) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
