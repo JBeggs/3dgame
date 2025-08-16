@@ -4,9 +4,14 @@ export type PhysicsAPI = {
   world: CANNON.World;
   playerBody: CANNON.Body;
   step: (dt: number) => void;
+  addStaticBox: (x: number, y: number, z: number, sx: number, sy: number, sz: number) => void;
 };
 
-export function createPhysics(): PhysicsAPI {
+let singleton: PhysicsAPI | null = null;
+
+export function getPhysics(): PhysicsAPI {
+  if (singleton) return singleton;
+
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
   world.broadphase = new CANNON.SAPBroadphase(world);
   world.allowSleep = true;
@@ -28,7 +33,15 @@ export function createPhysics(): PhysicsAPI {
     world.step(1 / 60, dt, 3);
   }
 
-  return { world, playerBody, step };
+  function addStaticBox(x: number, y: number, z: number, sx: number, sy: number, sz: number) {
+    const body = new CANNON.Body({ mass: 0 });
+    body.addShape(new CANNON.Box(new CANNON.Vec3(sx / 2, sy / 2, sz / 2)));
+    body.position.set(x, y, z);
+    world.addBody(body);
+  }
+
+  singleton = { world, playerBody, step, addStaticBox };
+  return singleton;
 }
 
 

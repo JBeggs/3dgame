@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { createInput } from './input';
-import { createPhysics } from './physics';
+import { getPhysics } from './physics';
 import { connect } from '../net/net';
 
 export function usePlayerController() {
   const input = useMemo(() => createInput(), []);
-  const physics = useMemo(() => createPhysics(), []);
+  const physics = useMemo(() => getPhysics(), []);
   const cameraTarget = useRef(new THREE.Vector3());
 
   useEffect(() => {
