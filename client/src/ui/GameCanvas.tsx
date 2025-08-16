@@ -48,7 +48,7 @@ function Scene() {
   );
 }
 
-export function GameCanvas() {
+export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: boolean }) {
   const inv = useInventory();
   const won = inv.items.coin >= getCoinTarget();
   useEffect(() => {
@@ -69,9 +69,9 @@ export function GameCanvas() {
         <StatsGl />
       </Canvas>
       <HUD />
-      <AvatarPanel />
+      {showConfigPanels ? <AvatarPanel /> : null}
       <TouchControls />
-      <MapControlsPanel />
+      {showConfigPanels ? <MapControlsPanel /> : null}
       <MiniMap />
       <WinOverlay visible={won} />
     </div>
