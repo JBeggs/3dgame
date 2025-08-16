@@ -64,6 +64,7 @@ export function getInput(): InputAPI {
 
   // Gamepad support
   let gamepadInterval: number | null = null;
+  let attached = false; // Prevent double attach/detach
   function pollGamepad() {
     const gamepads = navigator.getGamepads();
     const gamepad = gamepads[0]; // Use first connected gamepad
@@ -107,7 +108,13 @@ export function getInput(): InputAPI {
   singleton = {
     state,
     attach() {
-      console.log('Attaching input system...'); // Debug logging
+      if (attached) {
+        console.log('⚠️ Input already attached, skipping');
+        return;
+      }
+      console.log('🔗 Attaching input system...');
+      attached = true;
+      
       window.addEventListener('keydown', onKeyDown, { passive: false });
       window.addEventListener('keyup', onKeyUp, { passive: true });
       document.addEventListener('keydown', onKeyDown, { passive: false });
@@ -115,9 +122,16 @@ export function getInput(): InputAPI {
       
       // Start gamepad polling
       gamepadInterval = window.setInterval(pollGamepad, 16); // ~60fps
-      console.log('Input system attached, gamepad polling started'); // Debug logging
+      console.log('✅ Input system attached successfully');
     },
     detach() {
+      if (!attached) {
+        console.log('⚠️ Input already detached, skipping');
+        return;
+      }
+      console.log('🔌 Detaching input system...');
+      attached = false;
+      
       window.removeEventListener('keydown', onKeyDown as any);
       window.removeEventListener('keyup', onKeyUp as any);
       document.removeEventListener('keydown', onKeyDown as any);
@@ -128,6 +142,7 @@ export function getInput(): InputAPI {
         clearInterval(gamepadInterval);
         gamepadInterval = null;
       }
+      console.log('✅ Input system detached successfully');
     },
     setVector,
     setJump,
