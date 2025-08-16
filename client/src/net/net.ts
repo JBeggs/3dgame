@@ -58,6 +58,7 @@ export type NetAPI = {
 
 let ws: WebSocket | null = null;
 let lastPosSent = 0;
+let lastRotationLog = 0;
 
 export function connect(): NetAPI {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
@@ -90,7 +91,17 @@ export function connect(): NetAPI {
           store.tCurr = now;
           store.playersPrev = store.players;
           const m = new Map<number, PlayerSnapshot>();
-          for (const p of msg.list as PlayerSnapshot[]) m.set(p.id, p);
+          for (const p of msg.list as PlayerSnapshot[]) {
+            m.set(p.id, p);
+            // Debug received player data (throttled)
+            if (Math.random() < 0.1 && p.id !== store.selfId) { // 10% chance, exclude self
+              console.log(`📥 Received player ${p.id} data:`, {
+                position: `${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}`,
+                hasRotation: p.rotation !== undefined,
+                rotation: p.rotation ? `${(p.rotation * 180 / Math.PI).toFixed(0)}°` : 'MISSING'
+              });
+            }
+          }
           if (store.selfId != null) {
             const me = (msg.list as PlayerSnapshot[]).find(p => p.id === store.selfId);
             if (me) store.selfPos = { x: me.x, y: me.y, z: me.z };
@@ -200,6 +211,14 @@ const api: NetAPI = {
     const data: any = { t: 'pos', x, y, z };
     if (rotation !== undefined) {
       data.rotation = rotation;
+      // Throttle debug logging to avoid spam
+      if (now - lastRotationLog > 1000) { // Only log once per second
+        lastRotationLog = now;
+        console.log('📡 Sending position with rotation:', {
+          position: `${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`,
+          rotation: `${(rotation * 180 / Math.PI).toFixed(0)}°`
+        });
+      }
     }
     ws.send(JSON.stringify(data));
   },

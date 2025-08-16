@@ -56,6 +56,16 @@ function Scene() {
         if (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
         const rotation = prevRot + rotDiff * alpha;
         
+        // Debug network data for other players (throttled)
+        if (Math.random() < 0.01) { // Only log 1% of frames to reduce spam
+          console.log(`🌐 Player ${p.id} data:`, {
+            position: `${ix.toFixed(1)}, ${iy.toFixed(1)}, ${iz.toFixed(1)}`,
+            hasRotation: p.rotation !== undefined,
+            rotation: p.rotation ? `${(p.rotation * 180 / Math.PI).toFixed(0)}°` : 'MISSING',
+            interpolatedRotation: `${(rotation * 180 / Math.PI).toFixed(0)}°`
+          });
+        }
+        
         const color = idToColor(p.id);
         
         // Calculate distance from local player
