@@ -35,6 +35,9 @@ export function getInput(): InputAPI {
     if (document.activeElement && (document.activeElement as HTMLElement).blur) {
       try { (document.activeElement as HTMLElement).blur(); } catch {}
     }
+    if (e.code === 'Space' || e.code.startsWith('Arrow')) {
+      try { e.preventDefault(); } catch {}
+    }
     keys.add(e.code);
     if (e.code === 'Space') state.jump = true;
     if (e.code === 'KeyE') state.action = true;
@@ -60,12 +63,16 @@ export function getInput(): InputAPI {
   singleton = {
     state,
     attach() {
-      window.addEventListener('keydown', onKeyDown);
-      window.addEventListener('keyup', onKeyUp);
+      window.addEventListener('keydown', onKeyDown, { passive: false });
+      window.addEventListener('keyup', onKeyUp, { passive: true });
+      document.addEventListener('keydown', onKeyDown, { passive: false });
+      document.addEventListener('keyup', onKeyUp, { passive: true });
     },
     detach() {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('keydown', onKeyDown as any);
+      window.removeEventListener('keyup', onKeyUp as any);
+      document.removeEventListener('keydown', onKeyDown as any);
+      document.removeEventListener('keyup', onKeyUp as any);
     },
     setVector,
     setJump,
