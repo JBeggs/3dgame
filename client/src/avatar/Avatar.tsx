@@ -12,6 +12,12 @@ export function AvatarRoot({
   const secondary = new THREE.Color(cfg.colors.secondary);
   const accent = new THREE.Color(cfg.colors.accent);
   const accessoryColor = new THREE.Color(cfg.colors.accessory);
+  
+  // Debug logging for rotation
+  console.log('👤 AvatarRoot rotation:', {
+    rotation: rotation,
+    rotationDegrees: `${(rotation * 180 / Math.PI).toFixed(0)}°`
+  });
   // DISABLE GLB LOADING - using simple shapes instead
   // const [loadedBody, setLoadedBody] = useState<THREE.Object3D | null>(null);
   // const [loadedHead, setLoadedHead] = useState<THREE.Object3D | null>(null);

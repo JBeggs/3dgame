@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { getInput } from './input';
@@ -27,7 +27,7 @@ export function PlayerMesh() {
   const net = useMemo(() => connect(), []);
   const netState = useNet();
   const combat = useMemo(() => getPlayerCombat(), []);
-  const avatarRotationRef = useRef(0);
+  const [avatarRotation, setAvatarRotation] = useState(0);
 
   useFrame((_, dt) => {
     const { playerBody } = physics;
@@ -78,7 +78,7 @@ export function PlayerMesh() {
       // Calculate angle to face movement direction
       // Avatar's default front is positive Z, so we need to adjust the calculation
       const angle = Math.atan2(playerBody.velocity.x, playerBody.velocity.z);
-      avatarRotationRef.current = angle;
+      setAvatarRotation(angle);
       
       // Debug logging for rotation
       console.log('🧭 Movement:', {
@@ -90,7 +90,7 @@ export function PlayerMesh() {
     
     physics.step(dt);
     // send network position and rotation (throttled inside net api)
-    net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z, avatarRotationRef.current);
+    net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z, avatarRotation);
     // simple reconciliation: if server pos diverges a lot, snap toward it
     // TEMPORARILY DISABLED - causing respawn loop issue
     /*
@@ -123,7 +123,7 @@ export function PlayerMesh() {
 
   return (
     <group ref={ref}>
-      <AvatarRoot rotation={avatarRotationRef.current} />
+      <AvatarRoot rotation={avatarRotation} />
     </group>
   );
 }
