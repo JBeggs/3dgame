@@ -3,7 +3,6 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, StatsGl } from '@react-three/drei';
 import { PlayerMesh } from '../game/player';
 import { useNet } from '../net/net';
-import ReactDOM from 'react-dom';
 
 function Scene() {
   const net = useNet();

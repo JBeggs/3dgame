@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useSyncExternalStore } from 'react';
 
 type PlayerSnapshot = { id: number; x: number; y: number; z: number };
@@ -26,7 +26,7 @@ function emit() {
 export type NetAPI = {
   sendChat: (text: string) => void;
   sendPosition: (x: number, y: number, z: number) => void;
-  getState: () => Readonly<{ connected: boolean; selfId: number | null; players: Map<number, PlayerSnapshot>; messages: { from: number; text: string }[] }>;
+  getState: () => Readonly<Store>;
 };
 
 let ws: WebSocket | null = null;
@@ -88,7 +88,8 @@ const api: NetAPI = {
     ws.send(JSON.stringify({ t: 'pos', x, y, z }));
   },
   getState() {
-    return { connected: store.connected, selfId: store.selfId, players: store.players, messages: store.messages };
+    // Return the single store reference so useSyncExternalStore can compare by reference
+    return store;
   },
 };
 

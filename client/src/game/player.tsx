@@ -15,6 +15,8 @@ export function usePlayerController() {
     return () => input.detach();
   }, [input]);
 
+  const net = useMemo(() => connect(), []);
+
   useFrame((_, dt) => {
     const { playerBody } = physics;
     const move = new THREE.Vector3(input.state.right, 0, -input.state.forward);
@@ -28,8 +30,8 @@ export function usePlayerController() {
       playerBody.velocity.z *= 0.9;
     }
     physics.step(dt);
-    // send network position
-    connect().sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z);
+    // send network position (throttled inside net api)
+    net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z);
   });
 
   return { input, physics, cameraTarget } as const;
