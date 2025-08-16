@@ -32,6 +32,7 @@ function emit() {
 export type NetAPI = {
   sendChat: (text: string) => void;
   sendPosition: (x: number, y: number, z: number) => void;
+  joinRoom: (room: string) => void;
   getState: () => Readonly<Store>;
 };
 
@@ -96,6 +97,10 @@ const api: NetAPI = {
     if (now - lastPosSent < 1000 / 10) return; // 10Hz
     lastPosSent = now;
     ws.send(JSON.stringify({ t: 'pos', x, y, z }));
+  },
+  joinRoom(room: string) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ t: 'join', room }));
   },
   getState() {
     // Return the single store reference so useSyncExternalStore can compare by reference

@@ -52,6 +52,10 @@ function Scene() {
           </group>
         );
       })}
+      {/* Quick lobby switcher */}
+      <group position={[0,2,0]}>
+        <Text position={[0,0,0]} fontSize={0.2} color={'#ccc'} anchorX="center">Use 1/2/3 to switch rooms</Text>
+      </group>
     </>
   );
 }
@@ -68,6 +72,12 @@ export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: bo
     (window as any).gameApi = {
       setAvatar: (cfg: any) => avatarStore.set(cfg || {}),
     };
+    const handler = (e: KeyboardEvent) => {
+      if (e.code === 'Digit1') (window as any).netJoin?.('default');
+      if (e.code === 'Digit2') (window as any).netJoin?.('room2');
+      if (e.code === 'Digit3') (window as any).netJoin?.('room3');
+    };
+    window.addEventListener('keydown', handler);
     return () => { try { delete (window as any).gameApi; } catch {} };
   }, []);
   return (

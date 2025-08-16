@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GameCanvas } from './ui/GameCanvas';
 import { LandingScreen } from './ui/LandingScreen';
+import { connect } from './net/net';
 
 function App() {
   const [started, setStarted] = useState(false);
@@ -15,5 +16,9 @@ function App() {
 
 const el = document.getElementById('root')!;
 createRoot(el).render(<App />);
+
+// Expose quick room join
+const net = connect();
+(window as any).netJoin = (room: string) => net.joinRoom(room);
 
 
