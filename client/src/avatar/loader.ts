@@ -13,9 +13,12 @@ export async function loadGLTFPart(id: string): Promise<THREE.Object3D | null> {
     cache.set(id, obj);
     return obj;
   } catch {
+    if (import.meta.env.DEV) console.warn(`[avatar] GLB not found or failed to load: ${url}`);
     cache.set(id, null);
     return null;
   }
 }
+
+export function clearAvatarCache() { cache.clear(); }
 
 

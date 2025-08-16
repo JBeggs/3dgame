@@ -21,6 +21,13 @@ Usage
 - Place optional GLB files at `/web/assets/avatar/{bodyId|headId|outfitId}.glb`. If absent, the placeholder primitives render instead.
  - From host/webview you can call: `window.gameApi.setAvatar({ bodyId: 'bodyB', colors: { primary: '#ffcc00' } })`.
 
+Checklist to verify
+- [ ] Copy `bodyA.glb`, `headA.glb`, and `robeA.glb` into `client/public/assets/avatar/`
+- [ ] Start dev server; confirm GLBs load (warnings appear only if missing)
+- [ ] Movement makes the avatar blend Idle↔Run when clips are present
+- [ ] Use `window.gameApi.setAvatar({ bodyId: 'bodyB' })` to swap parts at runtime
+- [ ] For cache issues during swaps, call `clearAvatarCache()` after updating files (dev only)
+
 Notes
 - Asset compression and real meshes come next; for now, this is the UI/system scaffold.
 
