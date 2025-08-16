@@ -106,11 +106,7 @@ export function PlayerMesh() {
 
   return (
     <group ref={ref}>
-      <AvatarRoot 
-        speed={physics.playerBody.velocity.length()} 
-        isGrounded={physics.isGrounded()}
-        verticalVelocity={physics.playerBody.velocity.y}
-      />
+      <AvatarRoot />
     </group>
   );
 }
