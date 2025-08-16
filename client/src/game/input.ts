@@ -31,6 +31,10 @@ export function getInput(): InputAPI {
   }
 
   function onKeyDown(e: KeyboardEvent) {
+    // ensure canvas has focus even if UI clicked
+    if (document.activeElement && (document.activeElement as HTMLElement).blur) {
+      try { (document.activeElement as HTMLElement).blur(); } catch {}
+    }
     keys.add(e.code);
     if (e.code === 'Space') state.jump = true;
     if (e.code === 'KeyE') state.action = true;

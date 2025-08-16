@@ -6,6 +6,7 @@ export function TouchControls() {
   useEffect(() => {
     const input = getInput();
     const el = padRef.current!;
+    let active = false;
     function compute(clientX: number, clientY: number) {
       const r = el.getBoundingClientRect();
       const cx = r.left + r.width / 2;
@@ -14,29 +15,28 @@ export function TouchControls() {
       const dy = (clientY - cy) / (r.height / 2);
       input.setVector(dx, -dy);
     }
-    function onTouchStart(e: TouchEvent) { const t = e.touches[0]; compute(t.clientX, t.clientY); }
-    function onTouchMove(e: TouchEvent) { const t = e.touches[0]; compute(t.clientX, t.clientY); }
-    function onTouchEnd() { input.setVector(0, 0); }
-    // Mouse/trackpad: treat hover inside pad as active joystick
-    function onMouseEnter(e: MouseEvent) { compute(e.clientX, e.clientY); }
-    function onMouseMove(e: MouseEvent) { compute(e.clientX, e.clientY); }
-    function onMouseLeave() { input.setVector(0, 0); }
-    function onPointerUp() { input.setVector(0, 0); }
+    function onTouchStart(e: TouchEvent) { active = true; const t = e.touches[0]; compute(t.clientX, t.clientY); }
+    function onTouchMove(e: TouchEvent) { if (!active) return; const t = e.touches[0]; compute(t.clientX, t.clientY); }
+    function onTouchEnd() { active = false; input.setVector(0, 0); }
+    function onMouseDown(e: MouseEvent) { active = true; compute(e.clientX, e.clientY); }
+    function onMouseMove(e: MouseEvent) { if (!active) return; compute(e.clientX, e.clientY); }
+    function onMouseUp() { if (!active) return; active = false; input.setVector(0, 0); }
+    function onMouseLeave() { if (!active) return; active = false; input.setVector(0, 0); }
     el.addEventListener('touchstart', onTouchStart, { passive: true });
     el.addEventListener('touchmove', onTouchMove, { passive: true });
     el.addEventListener('touchend', onTouchEnd, { passive: true });
-    el.addEventListener('mouseenter', onMouseEnter, { passive: true } as any);
+    el.addEventListener('mousedown', onMouseDown, { passive: true } as any);
     el.addEventListener('mousemove', onMouseMove, { passive: true } as any);
+    el.addEventListener('mouseup', onMouseUp, { passive: true } as any);
     el.addEventListener('mouseleave', onMouseLeave, { passive: true } as any);
-    el.addEventListener('pointerup', onPointerUp, { passive: true });
     return () => {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
-      el.removeEventListener('mouseenter', onMouseEnter);
       el.removeEventListener('mousemove', onMouseMove);
+      el.removeEventListener('mousedown', onMouseDown);
+      el.removeEventListener('mouseup', onMouseUp);
       el.removeEventListener('mouseleave', onMouseLeave);
-      el.removeEventListener('pointerup', onPointerUp);
     };
   }, []);
   return (
