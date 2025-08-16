@@ -35,27 +35,31 @@ export function MapScene() {
         }
       }
     }
-    // place player at a valid floor cell near the center
+    // choose a spawn in the center of the most open room (5x5 emptiness score)
     function placeSpawn() {
-      const cx = Math.floor(grid.w / 2);
-      const cy = Math.floor(grid.h / 2);
-      const maxR = Math.max(grid.w, grid.h);
-      for (let r = 0; r < maxR; r++) {
-        for (let dy = -r; dy <= r; dy++) {
-          for (let dx = -r; dx <= r; dx++) {
-            const x = cx + dx, y = cy + dy;
-            if (x < 0 || y < 0 || x >= grid.w || y >= grid.h) continue;
-            if (grid.cells[y * grid.w + x] === 0) {
-              const px = (x + 0.5) * cellSize;
-              const pz = (y + 0.5) * cellSize;
-              const body = phys.playerBody;
-              body.position.set(px, 0.6, pz);
-              body.velocity.set(0, 0, 0);
-              return;
+      let bestX = 0, bestY = 0, bestScore = -1;
+      const cx = grid.w * 0.5, cy = grid.h * 0.5;
+      for (let y = 2; y < grid.h - 2; y++) {
+        for (let x = 2; x < grid.w - 2; x++) {
+          if (grid.cells[y * grid.w + x] !== 0) continue;
+          let score = 0;
+          for (let yy = -2; yy <= 2; yy++) {
+            for (let xx = -2; xx <= 2; xx++) {
+              if (grid.cells[(y + yy) * grid.w + (x + xx)] === 0) score++;
             }
           }
+          // prefer positions near the center slightly
+          const dcx = x - cx, dcy = y - cy;
+          const centerBias = -0.01 * (dcx * dcx + dcy * dcy);
+          score += centerBias;
+          if (score > bestScore) { bestScore = score; bestX = x; bestY = y; }
         }
       }
+      const px = (bestX + 0.5) * cellSize;
+      const pz = (bestY + 0.5) * cellSize;
+      const body = phys.playerBody;
+      body.position.set(px, 0.6, pz);
+      body.velocity.set(0, 0, 0);
     }
     placeSpawn();
   }, [grid]);
