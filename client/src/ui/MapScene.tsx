@@ -6,6 +6,7 @@ import { Spider, SmartSpider } from '../ai/spider';
 import { Bat } from '../ai/bat';
 import { Archer } from '../ai/archer';
 import { Slime } from '../ai/slime';
+import { Doorframes } from './Doorframes';
 import { ProjectileRenderer } from './ProjectileRenderer';
 import { inventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
