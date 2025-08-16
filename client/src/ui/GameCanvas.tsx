@@ -4,6 +4,8 @@ import { OrbitControls, StatsGl } from '@react-three/drei';
 import { PlayerMesh } from '../game/player';
 import { useNet } from '../net/net';
 import { MapScene } from './MapScene';
+import { HUD } from './HUD';
+import { Interactables } from './Interactables';
 
 function Scene() {
   const net = useNet();
@@ -31,15 +33,18 @@ function Scene() {
 
 export function GameCanvas() {
   return (
-    <Canvas shadows camera={{ position: [4, 3, 6], fov: 60 }}>
-      <color attach="background" args={[0.06, 0.07, 0.1]} />
-      <Suspense fallback={null}>
-        <Scene />
-      </Suspense>
-      <OrbitControls makeDefault enableDamping />
-      {/* Dev stats only; tree-shaken out in prod builds */}
-      <StatsGl />
-    </Canvas>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <Canvas shadows camera={{ position: [4, 3, 6], fov: 60 }}>
+        <color attach="background" args={[0.06, 0.07, 0.1]} />
+        <Suspense fallback={null}>
+          <Scene />
+          <Interactables />
+        </Suspense>
+        <OrbitControls makeDefault enableDamping />
+        <StatsGl />
+      </Canvas>
+      <HUD />
+    </div>
   );
 }
 
