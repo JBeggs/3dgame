@@ -18,6 +18,22 @@ export function Interactables() {
     doorBody.current = phys.addStaticBox(doorPos[0], doorPos[1], doorPos[2], 0.2, 1.5, 2);
   }, []);
 
+  // Proximity detection for door prompt and E-to-open (no hover needed)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (opened) { setShowPrompt(false); return; }
+      const body = getPhysics().playerBody;
+      const dx = body.position.x - doorPos[0];
+      const dz = body.position.z - doorPos[2];
+      const near = (dx*dx + dz*dz) < 2.0; // within ~1.4m
+      setShowPrompt(near);
+      if (near) {
+        tryOpenDoor(setOpened, doorBody);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [opened]);
+
   return (
     <>
       {/* Key */}
@@ -26,9 +42,7 @@ export function Interactables() {
         <meshStandardMaterial color="#ffd54a" emissive="#5c4700" emissiveIntensity={0.3} />
       </mesh>
       {/* Door visual */}
-      <mesh position={doorPos as any} onPointerOver={() => setShowPrompt(true)} onPointerOut={() => setShowPrompt(false)} onClick={() => {
-        tryOpenDoor(setOpened, doorBody);
-      }}>
+      <mesh position={doorPos as any} onClick={() => { tryOpenDoor(setOpened, doorBody); }}>
         <boxGeometry args={[0.2, 1.5, 2]} />
         <meshStandardMaterial color={opened ? '#3b8' : (inventory.has('key', 1) ? '#fb0' : '#a33')} />
       </mesh>
