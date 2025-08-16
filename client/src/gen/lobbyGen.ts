@@ -32,39 +32,8 @@ export function generateLobby(config: LobbyConfig): Grid {
     }
   }
   
-  // Add theme-specific decorations
-  if (config.theme === 'garden') {
-    // Add some decorative "pillars" - small walls that don't block much
-    const pillarPositions = [
-      [startX + 2, startY + 2],
-      [startX + roomSize - 3, startY + 2],
-      [startX + 2, startY + roomSize - 3],
-      [startX + roomSize - 3, startY + roomSize - 3]
-    ];
-    
-    pillarPositions.forEach(([px, py]) => {
-      if (px >= 0 && px < w && py >= 0 && py < h) {
-        cells[py * w + px] = 1;
-      }
-    });
-  } else if (config.theme === 'arena') {
-    // Add circular boundary
-    const centerX = startX + roomSize / 2;
-    const centerY = startY + roomSize / 2;
-    const radius = roomSize / 2 - 1;
-    
-    for (let y = startY; y < startY + roomSize; y++) {
-      for (let x = startX; x < startX + roomSize; x++) {
-        const dx = x - centerX;
-        const dy = y - centerY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance > radius) {
-          cells[y * w + x] = 1; // Wall
-        }
-      }
-    }
-  }
+  // No decorations in lobby - keep it completely empty
+  // (removed garden pillars and arena circular boundary)
 
   return {
     w,
@@ -83,8 +52,8 @@ export function generateLobby(config: LobbyConfig): Grid {
 }
 
 export const defaultLobbyConfig: LobbyConfig = {
-  size: 'medium', // Make it bigger for easier testing
-  theme: 'simple', // Keep it simple for movement testing
-  hasEnemies: false, // No enemies for now
-  hasPickups: false  // No pickups for now - just test movement
+  size: 'small', // Smaller lobby
+  theme: 'simple', // Force simple theme - no decorations  
+  hasEnemies: false, // No enemies
+  hasPickups: false  // No pickups
 };
