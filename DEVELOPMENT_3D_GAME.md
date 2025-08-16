@@ -143,10 +143,11 @@ Completed (ongoing pass)
 - Procedural dungeon with rooms/loops, room-based spawners and coins [done]
 - Goal gate and win overlay [done]
 - MiniMap and movement/controls polish [done]
+- AI nav grid with advanced pathfinding and behavioral states [done]
 
 Upcoming
 - Dress-up with real glTF parts and animations
 - Asset compression pipeline (KTX2/Draco/Meshopt) and size audit to keep <10MB
-- AI nav grid; network authority for gameplay
+- Network authority for gameplay
 
 

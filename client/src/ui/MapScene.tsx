@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { generateDungeon } from '../gen/mapGen';
 import { getPhysics } from '../game/physics';
-import { Spider } from '../ai/spider';
+import { Spider, SmartSpider } from '../ai/spider';
 import { inventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
 import { setGrid } from '../game/worldState';
 import { aStar } from '../ai/pathfind';
+import { createNavGrid } from '../gen/navGrid';
+import { NavGridDebug } from './NavGridDebug';
 import * as THREE from 'three';
 import { mulberry32 } from '../gen/mapGen';
 import { getInput } from '../game/input';
@@ -14,6 +16,7 @@ export function MapScene() {
   const defaultSeed = Number(localStorage.getItem('genSeed') || 1);
   const defaultRooms = Number(localStorage.getItem('genRooms') || 10);
   const grid = useMemo(() => generateDungeon(defaultSeed, 48, 36, defaultRooms), [defaultSeed, defaultRooms]);
+  const navGrid = useMemo(() => createNavGrid(grid), [grid]);
   const cellSize = 1.2; // expand grid scale a bit for wider corridors
   // Coins: one at many room centers; deterministic IDs
   const coins = useMemo(() => {
@@ -25,6 +28,7 @@ export function MapScene() {
     return out;
   }, [grid]);
   const [collected, setCollected] = useState<Set<number>>(new Set());
+  const [showNavDebug, setShowNavDebug] = useState(false);
 
   useEffect(() => {
     setGrid(grid);
@@ -64,6 +68,16 @@ export function MapScene() {
       body.velocity.set(0, 0, 0);
     }
     placeSpawn();
+    
+    // Debug toggle for nav grid
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'n' || e.key === 'N') {
+        setShowNavDebug(prev => !prev);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, [grid]);
 
   // Instanced wall meshes for performance
@@ -81,8 +95,24 @@ export function MapScene() {
   return <>
     <InstancedWalls positions={wallPositions} size={cellSize} />
     <Decorations rooms={grid.rooms} cellSize={cellSize} seed={defaultSeed} />
-    {/* Spawn a spider in every third room */}
-    {grid.rooms.map((r, i) => (r.tag === 'lair') && <PathSpider key={`sp-${i}`} grid={grid} cellSize={cellSize} start={[ (r.cx + 0.5)*cellSize, 0.3, (r.cy + 0.5)*cellSize ] as any} />)}
+    {/* Spawn smart spiders in lair rooms */}
+    {grid.rooms.map((r, i) => (r.tag === 'lair') && (
+      <SmartSpider 
+        key={`smart-sp-${i}`} 
+        grid={navGrid} 
+        cellSize={cellSize} 
+        position={[(r.cx + 0.5) * cellSize, 0.3, (r.cy + 0.5) * cellSize]} 
+      />
+    ))}
+    {/* Keep some basic PathSpiders for comparison */}
+    {grid.rooms.slice(0, 2).map((r, i) => r.tag === 'normal' && (
+      <PathSpider 
+        key={`path-sp-${i}`} 
+        grid={grid} 
+        cellSize={cellSize} 
+        start={[(r.cx + 0.5) * cellSize, 0.3, (r.cy + 0.5) * cellSize] as any} 
+      />
+    ))}
     {coins.map(c => !collected.has(c.id) && (
       <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]}>
         <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />
@@ -92,6 +122,9 @@ export function MapScene() {
     <ProximityCoinCollector coins={coins} collected={collected} setCollected={setCollected} />
     {/* Goal gate unlocks after collecting enough coins; removes physics when unlocked */}
     <GoalGate grid={grid} cellSize={cellSize} />
+    
+    {/* Navigation debug visualization */}
+    <NavGridDebug navGrid={navGrid} cellSize={cellSize} visible={showNavDebug} />
   </>;
 }
 

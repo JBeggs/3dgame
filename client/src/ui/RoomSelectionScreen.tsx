@@ -59,22 +59,27 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
       background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(30,20,48,0.9) 100%)', 
       backdropFilter: 'blur(10px)', 
       zIndex: 25, 
-      pointerEvents: 'auto' 
+      pointerEvents: 'auto',
+      padding: '16px',
+      boxSizing: 'border-box'
     }}>
       <div style={{ 
+        width: '100%',
         maxWidth: 700, 
         background: 'rgba(15,20,30,0.95)', 
         color: '#fff', 
         borderRadius: 16, 
-        padding: 32, 
+        padding: window.innerWidth < 768 ? 16 : 32, 
         fontFamily: 'system-ui, -apple-system, sans-serif',
         border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+        boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+        maxHeight: '90vh',
+        overflowY: 'auto'
       }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{ textAlign: 'center', marginBottom: window.innerWidth < 768 ? 20 : 32 }}>
           <h2 style={{ 
-            fontSize: '2rem', 
+            fontSize: window.innerWidth < 768 ? '1.5rem' : '2rem', 
             marginTop: 0, 
             marginBottom: 8,
             background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
@@ -84,7 +89,12 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
           }}>
             🌐 Choose Your Adventure
           </h2>
-          <p style={{ color: '#94a3b8', fontSize: '1rem', margin: 0 }}>
+          <p style={{ 
+            color: '#94a3b8', 
+            fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem', 
+            margin: 0,
+            lineHeight: 1.4
+          }}>
             Select a room to join and start your multiplayer journey
           </p>
         </div>
@@ -94,12 +104,12 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center',
-          marginBottom: 24,
-          padding: 12,
+          marginBottom: window.innerWidth < 768 ? 16 : 24,
+          padding: window.innerWidth < 768 ? 10 : 12,
           background: net.connected ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
           border: `1px solid ${net.connected ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
           borderRadius: 8,
-          fontSize: '0.9rem'
+          fontSize: window.innerWidth < 768 ? '0.85rem' : '0.9rem'
         }}>
           <span style={{ color: net.connected ? '#4ade80' : '#f87171' }}>
             {net.connected ? '🟢 Connected to Server' : '🔴 Connecting to Server...'}
@@ -128,8 +138,9 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
                     onClick={() => handleJoinRoom(room.id)}
                     style={{
                       display: 'flex',
-                      alignItems: 'center',
-                      padding: 20,
+                      alignItems: window.innerWidth < 768 ? 'flex-start' : 'center',
+                      flexDirection: window.innerWidth < 480 ? 'column' : 'row',
+                      padding: window.innerWidth < 768 ? 16 : 20,
                       background: 'rgba(255,255,255,0.05)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: 12,
@@ -150,21 +161,28 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
                   >
                     {/* Room Icon */}
                     <div style={{ 
-                      fontSize: '2.5rem', 
-                      marginRight: 20,
-                      minWidth: 60,
-                      textAlign: 'center'
+                      fontSize: window.innerWidth < 480 ? '2rem' : '2.5rem', 
+                      marginRight: window.innerWidth < 480 ? 0 : (window.innerWidth < 768 ? 12 : 20),
+                      marginBottom: window.innerWidth < 480 ? 12 : 0,
+                      minWidth: window.innerWidth < 480 ? 'auto' : 60,
+                      textAlign: 'center',
+                      alignSelf: window.innerWidth < 480 ? 'center' : 'flex-start'
                     }}>
                       {getRoomIcon(room.id)}
                     </div>
                     
                     {/* Room Info */}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                    <div style={{ flex: 1, width: window.innerWidth < 480 ? '100%' : 'auto' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        marginBottom: 4,
+                        flexWrap: 'wrap',
+                        gap: window.innerWidth < 768 ? 8 : 12
+                      }}>
                         <h3 style={{ 
-                          fontSize: '1.3rem', 
+                          fontSize: window.innerWidth < 768 ? '1.1rem' : '1.3rem', 
                           margin: 0, 
-                          marginRight: 12,
                           color: '#e2e8f0'
                         }}>
                           {room.name}
@@ -184,7 +202,7 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
                       
                       <p style={{ 
                         color: '#94a3b8', 
-                        fontSize: '0.9rem', 
+                        fontSize: window.innerWidth < 768 ? '0.85rem' : '0.9rem', 
                         margin: '4px 0 8px 0',
                         lineHeight: 1.4
                       }}>
@@ -194,10 +212,12 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
                       <div style={{ 
                         display: 'flex', 
                         alignItems: 'center',
-                        fontSize: '0.8rem',
-                        color: '#64748b'
+                        fontSize: window.innerWidth < 768 ? '0.75rem' : '0.8rem',
+                        color: '#64748b',
+                        flexWrap: 'wrap',
+                        gap: window.innerWidth < 768 ? 8 : 16
                       }}>
-                        <span style={{ marginRight: 16 }}>
+                        <span>
                           👥 {room.playerCount} player{room.playerCount !== 1 ? 's' : ''} online
                         </span>
                         <span>
@@ -207,13 +227,15 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
                     </div>
                     
                     {/* Join Arrow */}
-                    <div style={{ 
-                      fontSize: '1.5rem', 
-                      color: '#4ade80',
-                      marginLeft: 16
-                    }}>
-                      →
-                    </div>
+                    {window.innerWidth >= 480 && (
+                      <div style={{ 
+                        fontSize: '1.5rem', 
+                        color: '#4ade80',
+                        marginLeft: 16
+                      }}>
+                        →
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -224,10 +246,11 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
         {/* Footer Info */}
         <div style={{ 
           textAlign: 'center',
-          fontSize: '0.8rem',
+          fontSize: window.innerWidth < 768 ? '0.75rem' : '0.8rem',
           color: '#64748b',
           borderTop: '1px solid rgba(255,255,255,0.1)',
-          paddingTop: 16
+          paddingTop: window.innerWidth < 768 ? 12 : 16,
+          lineHeight: 1.4
         }}>
           💡 You can switch rooms anytime using the lobby panel in-game
         </div>
