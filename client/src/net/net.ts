@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSyncExternalStore } from 'react';
 
 type PlayerSnapshot = { id: number; x: number; y: number; z: number; name?: string };
@@ -181,14 +181,22 @@ const api: NetAPI = {
 };
 
 export function useNet() {
-  useEffect(() => {
-    connect();
-  }, []);
+  const netApi = useMemo(() => connect(), []);
   const subscribe = (fn: () => void) => {
     store.subscribers.add(fn);
     return () => store.subscribers.delete(fn);
   };
-  return useSyncExternalStore(subscribe, api.getState, api.getState);
+  const state = useSyncExternalStore(subscribe, netApi.getState, netApi.getState);
+  
+  // Return both state and API methods
+  return {
+    ...state,
+    sendChat: netApi.sendChat,
+    sendPosition: netApi.sendPosition,
+    joinRoom: netApi.joinRoom,
+    setPlayerName: netApi.setPlayerName,
+    getRooms: netApi.getRooms,
+  };
 }
 
 
