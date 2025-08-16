@@ -71,7 +71,15 @@ export function PlayerMesh() {
     camera.lookAt(p.x, p.y + 0.5, p.z);
   });
 
-  return <group ref={ref}><AvatarRoot speed={physics.playerBody.velocity.length()} /></group>;
+  return (
+    <group ref={ref}>
+      <AvatarRoot 
+        speed={physics.playerBody.velocity.length()} 
+        isGrounded={physics.isGrounded()}
+        verticalVelocity={physics.playerBody.velocity.y}
+      />
+    </group>
+  );
 }
 
 

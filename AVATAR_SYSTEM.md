@@ -30,10 +30,26 @@ Checklist to verify
 
 Open for development (TODO)
 - [x] Provide presets (A/B) wired to landing screen; GLBs can be dropped into assets/avatar
-- [ ] Add jump/land animation hooks and crossfade tuning
+- [x] Add jump/land animation hooks and crossfade tuning
 - [ ] Accessory slots (hat/cape) with color tints
+
+Animation System Enhancements (v2)
+- **Jump/Land Animation State Machine**: Added 5-state animation system (idle, running, jumping, falling, landing)
+- **Physics Integration**: Avatar now receives `isGrounded`, `verticalVelocity` props from player controller
+- **Animation Clips**: Supports Jump, Fall, and Land animation clips in addition to Idle/Run
+- **Smart Blending**: Automatic crossfading between states with proper loop settings
+- **Fallback System**: Gracefully falls back to Idle animation if specific clips are missing
+
+Animation Clip Naming Convention:
+- `Idle` or `idle` - looped idle animation
+- `Run`, `Walk`, `run`, `walk` - looped movement animation  
+- `Jump` or `jump` - one-shot jump takeoff animation
+- `Fall` or `fall` - looped falling animation
+- `Land` or `land` - one-shot landing animation
 
 Notes
 - Asset compression and real meshes come next; for now, this is the UI/system scaffold.
+- Animation state machine automatically handles transitions based on physics state
+- Landing animation plays for 0.3 seconds after touching ground
 
 

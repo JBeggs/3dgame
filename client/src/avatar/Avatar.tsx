@@ -4,8 +4,15 @@ import { useFrame } from '@react-three/fiber';
 import { useAvatar } from './store';
 import { loadGLTFPart } from './loader';
 
+export type AnimationState = 'idle' | 'running' | 'jumping' | 'falling' | 'landing';
+
 // Placeholder modular avatar composed of simple primitives
-export function AvatarRoot({ position = [0, 0, 0] as [number, number, number], speed = 0 }) {
+export function AvatarRoot({ 
+  position = [0, 0, 0] as [number, number, number], 
+  speed = 0, 
+  isGrounded = true,
+  verticalVelocity = 0 
+}) {
   const cfg = useAvatar();
   const primary = new THREE.Color(cfg.colors.primary);
   const secondary = new THREE.Color(cfg.colors.secondary);
@@ -14,32 +21,193 @@ export function AvatarRoot({ position = [0, 0, 0] as [number, number, number], s
   const [loadedHead, setLoadedHead] = useState<THREE.Object3D | null>(null);
   const [loadedOutfit, setLoadedOutfit] = useState<THREE.Object3D | null>(null);
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
-  const actionsRef = useRef<{ idle?: THREE.AnimationAction; run?: THREE.AnimationAction }>({});
+  const actionsRef = useRef<{ 
+    idle?: THREE.AnimationAction; 
+    run?: THREE.AnimationAction;
+    jump?: THREE.AnimationAction;
+    fall?: THREE.AnimationAction;
+    land?: THREE.AnimationAction;
+  }>({});
+  const [animState, setAnimState] = useState<AnimationState>('idle');
+  const [wasGrounded, setWasGrounded] = useState(true);
+  const landingTimerRef = useRef(0);
 
   useEffect(() => { loadGLTFPart(cfg.bodyId).then(setLoadedBody); }, [cfg.bodyId]);
   useEffect(() => { loadGLTFPart(cfg.headId).then(setLoadedHead); }, [cfg.headId]);
   useEffect(() => { loadGLTFPart(cfg.outfitId).then(setLoadedOutfit); }, [cfg.outfitId]);
 
-  // If the body GLTF has animations named Idle/Run, set up a mixer and blend by speed
+  // If the body GLTF has animations, set up a mixer and find all animation clips
   useEffect(() => {
     const root = loadedBody as any;
     if (!root || !root.animations || root.animations.length === 0) return;
     const mixer = new THREE.AnimationMixer(root);
     mixerRef.current = mixer;
+    
+    // Find animation clips by name patterns
     const idleClip = root.animations.find((a: THREE.AnimationClip) => /idle/i.test(a.name));
     const runClip = root.animations.find((a: THREE.AnimationClip) => /run|walk/i.test(a.name));
-    if (idleClip) actionsRef.current.idle = mixer.clipAction(idleClip).play();
-    if (runClip) actionsRef.current.run = mixer.clipAction(runClip).play();
+    const jumpClip = root.animations.find((a: THREE.AnimationClip) => /jump/i.test(a.name));
+    const fallClip = root.animations.find((a: THREE.AnimationClip) => /fall/i.test(a.name));
+    const landClip = root.animations.find((a: THREE.AnimationClip) => /land/i.test(a.name));
+    
+    // Set up actions with proper settings
+    if (idleClip) {
+      const action = mixer.clipAction(idleClip);
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      actionsRef.current.idle = action.play();
+    }
+    if (runClip) {
+      const action = mixer.clipAction(runClip);
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      actionsRef.current.run = action.play();
+    }
+    if (jumpClip) {
+      const action = mixer.clipAction(jumpClip);
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      actionsRef.current.jump = action;
+    }
+    if (fallClip) {
+      const action = mixer.clipAction(fallClip);
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      actionsRef.current.fall = action;
+    }
+    if (landClip) {
+      const action = mixer.clipAction(landClip);
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      actionsRef.current.land = action;
+    }
+    
     return () => { mixer.stopAllAction(); };
   }, [loadedBody]);
 
+  // Animation state machine logic
+  useEffect(() => {
+    // Determine animation state based on physics
+    let newState: AnimationState = animState;
+    
+    if (!isGrounded && !wasGrounded) {
+      // In air
+      if (verticalVelocity > 1) {
+        newState = 'jumping';
+      } else if (verticalVelocity < -1) {
+        newState = 'falling';
+      }
+    } else if (isGrounded && !wasGrounded) {
+      // Just landed
+      newState = 'landing';
+      landingTimerRef.current = 0.3; // Landing animation duration
+    } else if (isGrounded) {
+      // On ground
+      if (landingTimerRef.current > 0) {
+        newState = 'landing';
+      } else if (speed > 0.5) {
+        newState = 'running';
+      } else {
+        newState = 'idle';
+      }
+    }
+    
+    if (newState !== animState) {
+      setAnimState(newState);
+    }
+    setWasGrounded(isGrounded);
+  }, [isGrounded, wasGrounded, verticalVelocity, speed, animState]);
+
   useFrame((_, dt) => {
-    const mixer = mixerRef.current; if (!mixer) return;
+    const mixer = mixerRef.current; 
+    if (!mixer) return;
+    
     mixer.update(dt);
-    const s = Math.min(1, speed / 3);
-    const idle = actionsRef.current.idle; const run = actionsRef.current.run;
-    if (idle) idle.weight = 1 - s;
-    if (run) run.weight = s;
+    
+    // Update landing timer
+    if (landingTimerRef.current > 0) {
+      landingTimerRef.current -= dt;
+    }
+    
+    // Get all actions
+    const actions = actionsRef.current;
+    const { idle, run, jump, fall, land } = actions;
+    
+    // Reset all weights to 0
+    Object.values(actions).forEach(action => {
+      if (action) action.weight = 0;
+    });
+    
+    // Set weights based on current animation state with smooth blending
+    const crossfadeTime = 0.2;
+    
+    switch (animState) {
+      case 'idle':
+        if (idle) {
+          idle.weight = 1;
+          idle.enabled = true;
+        }
+        break;
+        
+      case 'running':
+        if (idle && run) {
+          const runBlend = Math.min(1, speed / 3);
+          idle.weight = 1 - runBlend;
+          run.weight = runBlend;
+          idle.enabled = true;
+          run.enabled = true;
+        } else if (run) {
+          run.weight = 1;
+          run.enabled = true;
+        }
+        break;
+        
+      case 'jumping':
+        if (jump) {
+          jump.weight = 1;
+          jump.enabled = true;
+          if (!jump.isRunning()) {
+            jump.reset().play();
+          }
+        } else if (idle) {
+          // Fallback to idle if no jump animation
+          idle.weight = 1;
+          idle.enabled = true;
+        }
+        break;
+        
+      case 'falling':
+        if (fall) {
+          fall.weight = 1;
+          fall.enabled = true;
+          if (!fall.isRunning()) {
+            fall.reset().play();
+          }
+        } else if (idle) {
+          // Fallback to idle if no fall animation
+          idle.weight = 1;
+          idle.enabled = true;
+        }
+        break;
+        
+      case 'landing':
+        if (land) {
+          land.weight = 1;
+          land.enabled = true;
+          if (!land.isRunning()) {
+            land.reset().play();
+          }
+        } else if (idle) {
+          // Fallback to idle if no land animation
+          idle.weight = 1;
+          idle.enabled = true;
+        }
+        break;
+    }
+    
+    // Disable actions with 0 weight for performance
+    Object.values(actions).forEach(action => {
+      if (action && action.weight === 0) {
+        action.enabled = false;
+      }
+    });
   });
 
   return (
