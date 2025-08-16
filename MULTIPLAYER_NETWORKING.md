@@ -26,7 +26,7 @@ Next extensions
 Open for development (TODO)
 - [x] Add nameplates over remote players and colorize by id
 - [x] Implement simple client prediction (velocity-based) with periodic reconciliation
-- [ ] Add lobby/join flow and per-room presence
+- [x] Add lobby/join flow and per-room presence system
 
 Nameplate System Enhancements (v2)
 - **Enhanced Nameplates**: Created dedicated `Nameplate` component with camera-facing behavior
@@ -44,11 +44,34 @@ Features:
 - **Color Consistency**: Each player ID maps to a consistent, vibrant color
 - **Status Awareness**: Visual indicators for player state/activity
 
+Lobby & Presence System (v3)
+- **Multi-Room Support**: Server manages multiple predefined rooms (lobby, dungeons, arena)
+- **Real-Time Presence**: Join/leave notifications with player names and timestamps
+- **Room Management**: Dynamic player counts and room switching
+- **Player Names**: Customizable player names with server validation (20 char limit)
+- **Lobby UI**: Comprehensive lobby panel with room list, presence feed, and controls
+- **Connection Status**: Visual connection indicators and player ID display
+- **Activity Feed**: Recent join/leave/rename events with timestamps
+
+Server Features:
+- **Room Tracking**: Maintains room metadata (name, player count, creation time)
+- **Presence Events**: Broadcasts join/leave/rename events to room members
+- **Player Management**: Tracks player names, join times, and room assignments
+- **Room Broadcasting**: Separate message channels per room
+
+Client Features:
+- **Room Selection**: Visual room browser with player counts and icons
+- **Name Setting**: In-line name editor with validation
+- **Presence Feed**: Scrollable activity log with color-coded events
+- **Auto-Refresh**: Automatic room list updates on changes
+- **Current Room Indicator**: Clear visual indication of active room
+
 Files
 - `server/src/index.js`
 - `client/src/net/net.ts`
 - `client/src/ui/Nameplate.tsx`
 - `client/src/ui/GameCanvas.tsx`
+- `client/src/ui/LobbyPanel.tsx`
 
 
 

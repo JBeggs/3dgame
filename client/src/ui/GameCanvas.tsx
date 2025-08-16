@@ -19,6 +19,7 @@ import { avatarStore } from '../avatar/store';
 import { useEffect } from 'react';
 import { Nameplate, idToColor } from './Nameplate';
 import { getPhysics } from '../game/physics';
+import { LobbyPanel } from './LobbyPanel';
 
 function Scene() {
   const net = useNet();
@@ -64,6 +65,7 @@ function Scene() {
             <Nameplate 
               playerId={p.id}
               position={[0, 0, 0]}
+              name={p.name}
               color={color}
               distance={distance}
             />
@@ -107,6 +109,7 @@ export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: bo
         <StatsGl />
       </Canvas>
       <HUD />
+      <LobbyPanel />
       {showConfigPanels ? <AvatarPanel /> : null}
       <TouchControls />
       <GamepadControls />

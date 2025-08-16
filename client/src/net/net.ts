@@ -1,29 +1,42 @@
 import { useEffect } from 'react';
 import { useSyncExternalStore } from 'react';
 
-type PlayerSnapshot = { id: number; x: number; y: number; z: number };
+type PlayerSnapshot = { id: number; x: number; y: number; z: number; name?: string };
+
+type Room = {
+  id: string;
+  name: string;
+  playerCount: number;
+  created: number;
+};
 
 type Store = {
   connected: boolean;
   selfId: number | null;
+  currentRoom: string;
   players: Map<number, PlayerSnapshot>;
   playersPrev: Map<number, PlayerSnapshot>;
   tPrev: number;
   tCurr: number;
   selfPos: { x: number; y: number; z: number } | null;
   messages: { from: number; text: string }[];
+  rooms: Room[];
+  presenceMessages: { type: 'joined' | 'left' | 'renamed'; playerId: number; playerName: string; timestamp: number }[];
   subscribers: Set<() => void>;
 };
 
 const store: Store = {
   connected: false,
   selfId: null,
+  currentRoom: 'lobby',
   players: new Map(),
   playersPrev: new Map(),
   tPrev: 0,
   tCurr: 0,
   selfPos: null,
   messages: [],
+  rooms: [],
+  presenceMessages: [],
   subscribers: new Set(),
 };
 
@@ -35,6 +48,8 @@ export type NetAPI = {
   sendChat: (text: string) => void;
   sendPosition: (x: number, y: number, z: number) => void;
   joinRoom: (room: string) => void;
+  setPlayerName: (name: string) => void;
+  getRooms: () => void;
   getState: () => Readonly<Store>;
 };
 
@@ -81,6 +96,47 @@ export function connect(): NetAPI {
           emit();
           break;
         }
+        case 'roomList':
+          store.rooms = msg.rooms || [];
+          emit();
+          break;
+        case 'playerJoined':
+          store.presenceMessages.push({
+            type: 'joined',
+            playerId: msg.playerId,
+            playerName: msg.playerName,
+            timestamp: Date.now()
+          });
+          // Keep only last 10 presence messages
+          if (store.presenceMessages.length > 10) {
+            store.presenceMessages = store.presenceMessages.slice(-10);
+          }
+          emit();
+          break;
+        case 'playerLeft':
+          store.presenceMessages.push({
+            type: 'left',
+            playerId: msg.playerId,
+            playerName: msg.playerName,
+            timestamp: Date.now()
+          });
+          if (store.presenceMessages.length > 10) {
+            store.presenceMessages = store.presenceMessages.slice(-10);
+          }
+          emit();
+          break;
+        case 'playerRenamed':
+          store.presenceMessages.push({
+            type: 'renamed',
+            playerId: msg.playerId,
+            playerName: msg.playerName,
+            timestamp: Date.now()
+          });
+          if (store.presenceMessages.length > 10) {
+            store.presenceMessages = store.presenceMessages.slice(-10);
+          }
+          emit();
+          break;
       }
     } catch {}
   });
@@ -106,7 +162,17 @@ const api: NetAPI = {
   },
   joinRoom(room: string) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    store.currentRoom = room;
     ws.send(JSON.stringify({ t: 'join', room }));
+    emit();
+  },
+  setPlayerName(name: string) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ t: 'setName', name }));
+  },
+  getRooms() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ t: 'getRooms' }));
   },
   getState() {
     // Return the single store reference so useSyncExternalStore can compare by reference
