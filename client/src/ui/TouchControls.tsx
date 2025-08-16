@@ -64,10 +64,13 @@ export function TouchControls() {
       const input = getInput();
       input.setVector(smoothedInput.current.x, smoothedInput.current.y);
       
-      // Update visual knob position
+      // Update visual knob position - clamp visual to trackpad bounds
+      const visualRange = 50; // 50px max visual distance
+      const knobX = Math.max(-visualRange, Math.min(visualRange, smoothedInput.current.x * visualRange));
+      const knobY = Math.max(-visualRange, Math.min(visualRange, smoothedInput.current.y * visualRange));
       setKnobPosition({
-        x: smoothedInput.current.x * 50, // 50px max distance
-        y: smoothedInput.current.y * 50
+        x: knobX,
+        y: knobY
       });
       
       animationId = requestAnimationFrame(animate);
@@ -89,33 +92,40 @@ export function TouchControls() {
       let dx = (clientX - cx) / (r.width / 2);
       let dy = (clientY - cy) / (r.height / 2);
       
-      // Clamp to circle
+      // Allow movement beyond trackpad bounds - extend the range
       const mag = Math.hypot(dx, dy);
-      if (mag > 1) {
-        dx /= mag;
-        dy /= mag;
+      const maxRange = 2.0; // Allow 2x the trackpad radius
+      if (mag > maxRange) {
+        dx = (dx / mag) * maxRange;
+        dy = (dy / mag) * maxRange;
       }
       
-      // Apply deadzone with smooth transition
+      // Apply deadzone with smooth transition - handle extended range
       let finalMag = 0;
       if (mag > config.deadzone) {
-        const normalizedMag = (mag - config.deadzone) / (1 - config.deadzone);
+        const normalizedMag = Math.min(1, (mag - config.deadzone) / (1 - config.deadzone));
         finalMag = applySmoothingCurve(normalizedMag, config.smoothingCurve);
       }
       
       // Apply sensitivity
       finalMag *= config.sensitivity;
       
-      // Calculate final values
+      // Calculate final values - maintain direction even outside bounds
       if (finalMag === 0) {
         targetInput.current.x = 0;
         targetInput.current.y = 0;
       } else {
-        const normalizedX = dx / Math.max(mag, 0.001);
-        const normalizedY = dy / Math.max(mag, 0.001);
+        const originalMag = Math.hypot(dx, dy);
+        const normalizedX = dx / Math.max(originalMag, 0.001);
+        const normalizedY = dy / Math.max(originalMag, 0.001);
         targetInput.current.x = normalizedX * finalMag;
         targetInput.current.y = -normalizedY * finalMag; // Invert Y for game coordinates
-        console.log('Touch input:', { x: targetInput.current.x, y: targetInput.current.y, mag: finalMag }); // Debug
+        console.log('Touch input:', { 
+          x: targetInput.current.x, 
+          y: targetInput.current.y, 
+          mag: finalMag,
+          outsideBounds: originalMag > 1
+        }); // Debug
       }
     }
     function onTouchStart(e: TouchEvent) { 
