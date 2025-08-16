@@ -18,6 +18,17 @@ export function PlayerMesh() {
   useEffect(() => {
     console.log('🔗 Attaching input system...');
     input.attach();
+    
+    // Test if input system is working
+    setTimeout(() => {
+      console.log('🧪 Input test after 2s:', {
+        right: input.state.right,
+        forward: input.state.forward,
+        jump: input.state.jump,
+        action: input.state.action
+      });
+    }, 2000);
+    
     return () => {
       console.log('🔌 Detaching input system...');
       input.detach();
@@ -37,6 +48,15 @@ export function PlayerMesh() {
     
     // Light debug logging - only log when input changes
     const hasInput = input.state.right !== 0 || input.state.forward !== 0 || input.state.jump;
+    
+    // DEBUG: Always log for now to see what's happening
+    console.log('🔧 Debug input state:', {
+      right: input.state.right,
+      forward: input.state.forward, 
+      jump: input.state.jump,
+      hasInput: hasInput
+    });
+    
     if (hasInput) {
       console.log('🎮 Movement:', {
         direction: `${input.state.right.toFixed(1)}, ${input.state.forward.toFixed(1)}`,

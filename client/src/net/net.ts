@@ -103,23 +103,34 @@ export function connect(): NetAPI {
           store.playersPrev = store.players;
           const m = new Map<number, PlayerSnapshot>();
           
-          // More detailed debugging of player data
-          console.log(`👥 LIVE: ${(msg.list as PlayerSnapshot[]).length} players in ${store.currentRoom}`);
-          
-          for (const player of msg.list as PlayerSnapshot[]) {
-            const isMe = player.id === store.selfId;
+          // Reduced network logging to focus on input debugging
+          const hasMovement = (msg.list as PlayerSnapshot[]).some(player => {
             const prevPlayer = store.players.get(player.id);
-            const moved = prevPlayer && (
+            return prevPlayer && (
               Math.abs(player.x - prevPlayer.x) > 0.1 || 
               Math.abs(player.z - prevPlayer.z) > 0.1
             );
-            
-            console.log(`  Player ${player.id}${isMe ? ' (me)' : ''}:`, {
-              pos: `${player.x.toFixed(1)}, ${player.y.toFixed(1)}, ${player.z.toFixed(1)}`,
-              rot: player.rotation ? `${(player.rotation * 180 / Math.PI).toFixed(0)}°` : 'none',
-              name: player.name || 'unnamed',
-              moved: moved ? '✅ MOVED' : (prevPlayer ? '❌ STATIC' : '🆕 NEW')
-            });
+          });
+          
+          if (hasMovement) {
+            console.log(`👥 MOVEMENT DETECTED: ${(msg.list as PlayerSnapshot[]).length} players in ${store.currentRoom}`);
+            for (const player of msg.list as PlayerSnapshot[]) {
+              const isMe = player.id === store.selfId;
+              const prevPlayer = store.players.get(player.id);
+              const moved = prevPlayer && (
+                Math.abs(player.x - prevPlayer.x) > 0.1 || 
+                Math.abs(player.z - prevPlayer.z) > 0.1
+              );
+              
+              if (moved || !prevPlayer) {
+                console.log(`  Player ${player.id}${isMe ? ' (me)' : ''}:`, {
+                  pos: `${player.x.toFixed(1)}, ${player.y.toFixed(1)}, ${player.z.toFixed(1)}`,
+                  rot: player.rotation ? `${(player.rotation * 180 / Math.PI).toFixed(0)}°` : 'none',
+                  name: player.name || 'unnamed',
+                  moved: moved ? '✅ MOVED' : '🆕 NEW'
+                });
+              }
+            }
           }
           
           for (const p of msg.list as PlayerSnapshot[]) {
