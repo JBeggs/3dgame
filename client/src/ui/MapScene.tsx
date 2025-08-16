@@ -16,6 +16,7 @@ import { getInput } from '../game/input';
 import { getAudio } from '../game/audio';
 import { useMapState } from '../game/mapStore';
 import { getEnemyHealthManager } from '../game/enemyHealth';
+import { calculateRoomDepth, getScaledEnemyStats } from '../game/difficultyScaling';
 
 export function MapScene() {
   const mapState = useMapState();
@@ -109,15 +110,39 @@ export function MapScene() {
   return <>
     <InstancedWalls positions={wallPositions} size={cellSize} />
     <Decorations rooms={grid.rooms} cellSize={cellSize} seed={mapState.seed} />
-    {/* Spawn smart spiders in lair rooms */}
-    {grid.rooms.map((r, i) => (r.tag === 'lair') && (
-      <SmartSpider 
-        key={`smart-sp-${i}`} 
-        grid={navGrid} 
-        cellSize={cellSize} 
-        position={[(r.cx + 0.5) * cellSize, 0.3, (r.cy + 0.5) * cellSize]} 
-      />
-    ))}
+    {/* Spawn smart spiders in lair rooms with difficulty scaling */}
+    {grid.rooms.flatMap((r, roomIndex) => {
+      if (r.tag !== 'lair') return [];
+      
+      const roomDepth = calculateRoomDepth(grid.rooms, r);
+      const spiderStats = getScaledEnemyStats(30, 8, roomDepth); // base health 30, base damage 8
+      
+      // Spawn multiple spiders based on difficulty
+      return Array.from({ length: spiderStats.spawnCount }, (_, spiderIndex) => {
+        // Spread spiders around the room center
+        const angle = (spiderIndex / spiderStats.spawnCount) * Math.PI * 2;
+        const radius = Math.min(r.w, r.h) * 0.3 * cellSize;
+        const offsetX = Math.cos(angle) * radius;
+        const offsetZ = Math.sin(angle) * radius;
+        
+        return (
+          <SmartSpider 
+            key={`smart-sp-${roomIndex}-${spiderIndex}`} 
+            grid={navGrid} 
+            cellSize={cellSize} 
+            position={[
+              (r.cx + 0.5) * cellSize + offsetX, 
+              0.3, 
+              (r.cy + 0.5) * cellSize + offsetZ
+            ]}
+            healthMultiplier={spiderStats.health / 30}
+            damageMultiplier={spiderStats.damage / 8}
+            speedMultiplier={spiderStats.speedMultiplier}
+            alertnessBonus={spiderStats.alertnessBonus}
+          />
+        );
+      });
+    })}
     {/* Keep some basic PathSpiders for comparison */}
     {grid.rooms.slice(0, 2).map((r, i) => r.tag === 'normal' && (
       <PathSpider 
@@ -128,15 +153,40 @@ export function MapScene() {
       />
     ))}
     
-    {/* Spawn flying bats in treasure rooms */}
-    {grid.rooms.map((r, i) => (r.tag === 'treasure') && (
-      <Bat 
-        key={`bat-${i}`} 
-        grid={navGrid} 
-        cellSize={cellSize} 
-        position={[(r.cx + 0.5) * cellSize, 2.5, (r.cy + 0.5) * cellSize]} 
-      />
-    ))}
+    {/* Spawn flying bats in treasure rooms with difficulty scaling */}
+    {grid.rooms.flatMap((r, roomIndex) => {
+      if (r.tag !== 'treasure') return [];
+      
+      const roomDepth = calculateRoomDepth(grid.rooms, r);
+      const batStats = getScaledEnemyStats(40, 12, roomDepth); // base health 40, base damage 12
+      
+      // Spawn multiple bats based on difficulty
+      return Array.from({ length: batStats.spawnCount }, (_, batIndex) => {
+        // Spread bats around the room at different heights
+        const angle = (batIndex / batStats.spawnCount) * Math.PI * 2 + (batIndex * 0.5);
+        const radius = Math.min(r.w, r.h) * 0.4 * cellSize;
+        const offsetX = Math.cos(angle) * radius;
+        const offsetZ = Math.sin(angle) * radius;
+        const heightVariation = batIndex * 0.3;
+        
+        return (
+          <Bat 
+            key={`bat-${roomIndex}-${batIndex}`} 
+            grid={navGrid} 
+            cellSize={cellSize} 
+            position={[
+              (r.cx + 0.5) * cellSize + offsetX, 
+              2.5 + heightVariation, 
+              (r.cy + 0.5) * cellSize + offsetZ
+            ]}
+            healthMultiplier={batStats.health / 40}
+            damageMultiplier={batStats.damage / 12}
+            speedMultiplier={batStats.speedMultiplier}
+            alertnessBonus={batStats.alertnessBonus}
+          />
+        );
+      });
+    })}
     
     {/* Projectile system */}
     <ProjectileRenderer />

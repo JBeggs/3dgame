@@ -13,11 +13,19 @@ import { getInput } from '../game/input';
 export function Bat({ 
   grid, 
   cellSize, 
-  position = [6, 2, 6] as [number, number, number] 
+  position = [6, 2, 6] as [number, number, number],
+  healthMultiplier = 1,
+  damageMultiplier = 1,
+  speedMultiplier = 1,
+  alertnessBonus = 0
 }: { 
   grid: GridNav; 
   cellSize: number; 
-  position?: [number, number, number] 
+  position?: [number, number, number];
+  healthMultiplier?: number;
+  damageMultiplier?: number;
+  speedMultiplier?: number;
+  alertnessBonus?: number;
 }) {
   const ref = useRef<THREE.Mesh>(null!);
   const [aiController] = useState(() => new AIController(grid, cellSize, new THREE.Vector3(...position)));
@@ -39,9 +47,10 @@ export function Bat({
       ref.current.position.set(position[0], position[1], position[2]);
     }
     
-    // Initialize health
+    // Initialize health with scaling
     const enemyHealthManager = getEnemyHealthManager();
-    const initialHealth = enemyHealthManager.createEnemy(enemyId, 40); // Bats have more health than spiders
+    const scaledHealth = Math.floor(40 * healthMultiplier); // Bats have more health than spiders
+    const initialHealth = enemyHealthManager.createEnemy(enemyId, scaledHealth);
     setHealth(initialHealth);
     
     return () => {
@@ -106,9 +115,9 @@ export function Bat({
     switch (newState) {
       case 'idle':
       case 'patrol':
-        // Gentle hovering movement
+        // Gentle hovering movement with speed scaling
         if (moveVector.length() > 0) {
-          targetPosition.add(moveVector.clone().multiplyScalar(dt * 1.0));
+          targetPosition.add(moveVector.clone().multiplyScalar(dt * 1.0 * speedMultiplier));
         }
         // Add some floating motion
         setWingPhase(prev => prev + dt * 4);
@@ -118,15 +127,15 @@ export function Bat({
       case 'chase':
         // Fly towards player but maintain distance for shooting
         if (distanceToPlayer > attackRange * 0.7) {
-          // Get closer
+          // Get closer with speed scaling
           const direction = playerVec.clone().sub(currentPos).normalize();
           direction.y = 0; // Don't chase vertically
-          targetPosition.add(direction.multiplyScalar(dt * 2.5));
+          targetPosition.add(direction.multiplyScalar(dt * 2.5 * speedMultiplier));
         } else if (distanceToPlayer < attackRange * 0.5) {
-          // Back away to maintain shooting distance
+          // Back away to maintain shooting distance with speed scaling
           const direction = currentPos.clone().sub(playerVec).normalize();
           direction.y = 0;
-          targetPosition.add(direction.multiplyScalar(dt * 1.5));
+          targetPosition.add(direction.multiplyScalar(dt * 1.5 * speedMultiplier));
         }
         // Maintain flight height with some evasive movement
         setWingPhase(prev => prev + dt * 6);
@@ -134,9 +143,9 @@ export function Bat({
         break;
         
       case 'search':
-        // Search behavior - fly around looking for player
+        // Search behavior - fly around looking for player with speed scaling
         if (moveVector.length() > 0) {
-          targetPosition.add(moveVector.clone().multiplyScalar(dt * 1.8));
+          targetPosition.add(moveVector.clone().multiplyScalar(dt * 1.8 * speedMultiplier));
         }
         setWingPhase(prev => prev + dt * 5);
         targetPosition.y = targetHeight + Math.sin(wingPhase) * 0.25;
@@ -166,11 +175,12 @@ export function Bat({
           const shootPos = currentPos.clone();
           shootPos.y -= 0.2; // Shoot from slightly below center
           
+          const scaledDamage = Math.floor(12 * damageMultiplier);
           projectileManager.createProjectile(
             shootPos,
             predictedPos,
             8, // Speed
-            12, // Damage
+            scaledDamage, // Scaled damage
             'spit', // Green spit projectile
             `bat-${ref.current.uuid}` // Owner ID
           );
@@ -184,12 +194,16 @@ export function Bat({
     // Apply movement with smooth interpolation
     ref.current.position.lerp(targetPosition, dt * 3);
     
-    // Update visual state
+    // Update visual state with alertness bonus
+    const newState = aiController.getState();
+    const baseAlert = aiController.getAlertLevel();
+    const boostedAlert = Math.min(1, baseAlert + alertnessBonus);
+    
     if (newState !== currentState) {
       setCurrentState(newState);
     }
-    if (Math.abs(newAlert - alertLevel) > 0.1) {
-      setAlertLevel(newAlert);
+    if (Math.abs(boostedAlert - alertLevel) > 0.1) {
+      setAlertLevel(boostedAlert);
     }
   });
 

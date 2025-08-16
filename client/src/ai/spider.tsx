@@ -41,11 +41,19 @@ export function Spider({ position = [6, 0.3, 6] as [number, number, number] }) {
 export function SmartSpider({ 
   grid, 
   cellSize, 
-  position = [6, 0.3, 6] as [number, number, number] 
+  position = [6, 0.3, 6] as [number, number, number],
+  healthMultiplier = 1,
+  damageMultiplier = 1,
+  speedMultiplier = 1,
+  alertnessBonus = 0
 }: { 
   grid: GridNav; 
   cellSize: number; 
-  position?: [number, number, number] 
+  position?: [number, number, number];
+  healthMultiplier?: number;
+  damageMultiplier?: number;
+  speedMultiplier?: number;
+  alertnessBonus?: number;
 }) {
   const ref = useRef<THREE.Mesh>(null!);
   const [aiController] = useState(() => new AIController(grid, cellSize, new THREE.Vector3(...position)));
@@ -60,9 +68,10 @@ export function SmartSpider({
       ref.current.position.set(...position);
     }
     
-    // Initialize health
+    // Initialize health with scaling
     const enemyHealthManager = getEnemyHealthManager();
-    const initialHealth = enemyHealthManager.createEnemy(enemyId, 30);
+    const scaledHealth = Math.floor(30 * healthMultiplier);
+    const initialHealth = enemyHealthManager.createEnemy(enemyId, scaledHealth);
     setHealth(initialHealth);
     
     return () => {
@@ -117,27 +126,30 @@ export function SmartSpider({
     const moveVector = aiController.update(dt, playerVec);
     aiController.updatePosition(ref.current.position);
     
-    // Apply movement
+    // Apply movement with speed scaling
     if (moveVector.length() > 0) {
-      const maxSpeed = currentState === 'chase' ? 2.5 : 1.5;
+      const baseSpeed = currentState === 'chase' ? 2.5 : 1.5;
+      const maxSpeed = baseSpeed * speedMultiplier;
       const actualMove = moveVector.clone().multiplyScalar(Math.min(dt * maxSpeed, moveVector.length()));
       ref.current.position.add(actualMove);
     }
     
-    // Update visual state
+    // Update visual state with alertness bonus
     const newState = aiController.getState();
-    const newAlert = aiController.getAlertLevel();
+    const baseAlert = aiController.getAlertLevel();
+    const boostedAlert = Math.min(1, baseAlert + alertnessBonus);
     
     if (newState !== currentState) {
       setCurrentState(newState);
     }
-    if (Math.abs(newAlert - alertLevel) > 0.1) {
-      setAlertLevel(newAlert);
+    if (Math.abs(boostedAlert - alertLevel) > 0.1) {
+      setAlertLevel(boostedAlert);
     }
     
-    // Attack logic - spider damages player
+    // Attack logic - spider damages player with scaling
     if (aiController.canAttack() && dist < 1.2) {
-      playerHealth.damage(8 * dt);
+      const scaledDamage = 8 * damageMultiplier * dt;
+      playerHealth.damage(scaledDamage);
     }
   });
 
