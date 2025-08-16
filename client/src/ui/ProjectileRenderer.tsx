@@ -5,6 +5,7 @@ import { getProjectileManager, Projectile } from '../game/projectiles';
 import { getPhysics } from '../game/physics';
 import { playerHealth } from '../game/health';
 import { getGrid } from '../game/worldState';
+import { getAudio } from '../game/audio';
 
 export function ProjectileRenderer() {
   const projectileManager = getProjectileManager();
@@ -31,6 +32,7 @@ export function ProjectileRenderer() {
     
     for (const hit of hits) {
       playerHealth.damage(hit.damage);
+      getAudio().play('hit');
     }
     
     // Update React state

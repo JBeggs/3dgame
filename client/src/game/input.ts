@@ -11,6 +11,7 @@ type InputAPI = {
   detach: () => void;
   setVector: (right: number, forward: number) => void;
   setJump: (v: boolean) => void;
+  setAction: (v: boolean) => void;
 };
 
 let singleton: InputAPI | null = null;
@@ -60,6 +61,43 @@ export function getInput(): InputAPI {
   // Optional: consumer can set action programmatically (e.g., touch button)
   function setAction(v: boolean) { state.action = v; }
 
+  // Gamepad support
+  let gamepadInterval: number | null = null;
+  function pollGamepad() {
+    const gamepads = navigator.getGamepads();
+    const gamepad = gamepads[0]; // Use first connected gamepad
+    if (gamepad) {
+      // Left stick for movement
+      const leftX = gamepad.axes[0] || 0;
+      const leftY = gamepad.axes[1] || 0;
+      // Apply deadzone
+      const deadzone = 0.15;
+      const magnitude = Math.hypot(leftX, leftY);
+      if (magnitude > deadzone) {
+        const normalizedX = leftX / magnitude;
+        const normalizedY = leftY / magnitude;
+        const adjustedMagnitude = Math.min(1, (magnitude - deadzone) / (1 - deadzone));
+        setVector(normalizedX * adjustedMagnitude, -normalizedY * adjustedMagnitude);
+      } else {
+        // Only reset if no keyboard input is active
+        if (!keys.has('KeyW') && !keys.has('KeyS') && !keys.has('KeyA') && !keys.has('KeyD') && 
+            !keys.has('ArrowUp') && !keys.has('ArrowDown') && !keys.has('ArrowLeft') && !keys.has('ArrowRight')) {
+          setVector(0, 0);
+        }
+      }
+      
+      // Face buttons (A = 0, B = 1, X = 2, Y = 3)
+      const aButton = gamepad.buttons[0]?.pressed || false;
+      const bButton = gamepad.buttons[1]?.pressed || false;
+      
+      // A button for jump, B button for action
+      if (aButton && !state.jump) state.jump = true;
+      if (!aButton && state.jump) state.jump = false;
+      if (bButton && !state.action) state.action = true;
+      if (!bButton && state.action) state.action = false;
+    }
+  }
+
   singleton = {
     state,
     attach() {
@@ -67,12 +105,21 @@ export function getInput(): InputAPI {
       window.addEventListener('keyup', onKeyUp, { passive: true });
       document.addEventListener('keydown', onKeyDown, { passive: false });
       document.addEventListener('keyup', onKeyUp, { passive: true });
+      
+      // Start gamepad polling
+      gamepadInterval = window.setInterval(pollGamepad, 16); // ~60fps
     },
     detach() {
       window.removeEventListener('keydown', onKeyDown as any);
       window.removeEventListener('keyup', onKeyUp as any);
       document.removeEventListener('keydown', onKeyDown as any);
       document.removeEventListener('keyup', onKeyUp as any);
+      
+      // Stop gamepad polling
+      if (gamepadInterval) {
+        clearInterval(gamepadInterval);
+        gamepadInterval = null;
+      }
     },
     setVector,
     setJump,

@@ -13,11 +13,13 @@ import { NavGridDebug } from './NavGridDebug';
 import * as THREE from 'three';
 import { mulberry32 } from '../gen/mapGen';
 import { getInput } from '../game/input';
+import { getAudio } from '../game/audio';
+import { useMapState } from '../game/mapStore';
+import { getEnemyHealthManager } from '../game/enemyHealth';
 
 export function MapScene() {
-  const defaultSeed = Number(localStorage.getItem('genSeed') || 1);
-  const defaultRooms = Number(localStorage.getItem('genRooms') || 10);
-  const grid = useMemo(() => generateDungeon(defaultSeed, 48, 36, defaultRooms), [defaultSeed, defaultRooms]);
+  const mapState = useMapState();
+  const grid = useMemo(() => generateDungeon(mapState.seed, 48, 36, mapState.rooms), [mapState.seed, mapState.rooms, mapState.generation]);
   const navGrid = useMemo(() => createNavGrid(grid), [grid]);
   const cellSize = 1.2; // expand grid scale a bit for wider corridors
   // Coins: one at many room centers; deterministic IDs
@@ -33,6 +35,16 @@ export function MapScene() {
   const [showNavDebug, setShowNavDebug] = useState(false);
 
   useEffect(() => {
+    // Reset collected coins when map changes
+    setCollected(new Set());
+    
+    // Clear all enemy health data
+    const enemyHealthManager = getEnemyHealthManager();
+    enemyHealthManager.getAllEnemies().clear();
+    
+    // TODO: Clear existing physics bodies (would need physics API enhancement)
+    // For now, physics bodies accumulate but it's not critical for hot-reload demo
+    
     setGrid(grid);
     const phys = getPhysics();
     // build static walls in physics
@@ -80,7 +92,7 @@ export function MapScene() {
     
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [grid]);
+  }, [grid, mapState.generation]);
 
   // Instanced wall meshes for performance
   const wallPositions = useMemo(() => {
@@ -172,6 +184,7 @@ function ProximityCoinCollector({ coins, collected, setCollected }: { coins: { x
         const dx = c.x - px; const dz = c.z - pz;
         if (dx*dx + dz*dz < 0.36) {
           inventory.add('coin', 1);
+          getAudio().play('pickup');
           const next = new Set(collected); next.add(c.id); setCollected(next);
         }
       }

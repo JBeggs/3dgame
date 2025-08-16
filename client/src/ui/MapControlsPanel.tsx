@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
+import { mapStore, useMapState } from '../game/mapStore';
 
 export function MapControlsPanel() {
-  const [seed, setSeed] = useState<string>(String(Number(localStorage.getItem('genSeed') || 1)));
-  const [rooms, setRooms] = useState<string>(String(Number(localStorage.getItem('genRooms') || 10)));
+  const mapState = useMapState();
+  const [seed, setSeed] = useState<string>(String(mapState.seed));
+  const [rooms, setRooms] = useState<string>(String(mapState.rooms));
 
-  function applyAndReload() {
+  function applyAndRegenerate() {
     const s = Math.max(1, Math.floor(Number(seed)||1));
     const r = Math.max(3, Math.floor(Number(rooms)||10));
-    localStorage.setItem('genSeed', String(s));
-    localStorage.setItem('genRooms', String(r));
-    location.reload();
+    mapStore.updateSettings(s, r);
   }
 
   return (
@@ -93,7 +93,7 @@ export function MapControlsPanel() {
       
       {/* Generate Button */}
       <button 
-        onClick={applyAndReload}
+        onClick={applyAndRegenerate}
         style={{
           width: '100%',
           padding: '10px 16px',

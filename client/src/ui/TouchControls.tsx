@@ -4,6 +4,7 @@ import { getInput } from '../game/input';
 export function TouchControls() {
   const padRef = useRef<HTMLDivElement>(null);
   const jumpRef = useRef<HTMLButtonElement>(null);
+  const actionRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const input = getInput();
     const el = padRef.current!;
@@ -114,6 +115,33 @@ export function TouchControls() {
           fontWeight: 'bold'
         }}
       >Jump</button>
+      <button
+        ref={actionRef}
+        onMouseDown={(e) => { e.preventDefault(); getInput().setAction(true); }}
+        onMouseUp={(e) => { e.preventDefault(); getInput().setAction(false); }}
+        onTouchStart={(e) => { e.preventDefault(); getInput().setAction(true); }}
+        onTouchEnd={(e) => { e.preventDefault(); getInput().setAction(false); }}
+        onTouchCancel={(e) => { e.preventDefault(); getInput().setAction(false); }}
+        style={{ 
+          position: 'absolute', 
+          right: 16, 
+          bottom: 'calc(30px + env(safe-area-inset-bottom))', 
+          width: 72, 
+          height: 72, 
+          borderRadius: 36, 
+          background: 'rgba(255,255,255,0.08)', 
+          color: '#fff', 
+          border: '1px solid rgba(255,255,255,0.2)', 
+          zIndex: 10, 
+          pointerEvents: 'auto' as any,
+          touchAction: 'manipulation',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          fontSize: '10px',
+          fontWeight: 'bold'
+        }}
+      >Action</button>
     </>
   );
 }

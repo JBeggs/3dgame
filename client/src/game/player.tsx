@@ -7,6 +7,7 @@ import { connect } from '../net/net';
 import { AvatarRoot } from '../avatar/Avatar';
 import { setPlayerPos } from './worldState';
 import { useNet } from '../net/net';
+import { getAudio } from './audio';
 
 export function usePlayerController() {
   const input = useMemo(() => getInput(), []);
@@ -35,6 +36,7 @@ export function usePlayerController() {
     // basic jump
     if (input.state.jump && physics.isGrounded()) {
       playerBody.velocity.y = 4.5;
+      getAudio().play('jump');
     }
     physics.step(dt);
     // send network position (throttled inside net api)

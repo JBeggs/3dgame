@@ -5,6 +5,9 @@ import { getPhysics } from '../game/physics';
 import { playerHealth } from '../game/health';
 import { AIController, AIState } from './behaviors';
 import { GridNav } from './pathfind';
+import { getEnemyHealthManager, EnemyHealth } from '../game/enemyHealth';
+import { getInput } from '../game/input';
+import { getAudio } from '../game/audio';
 
 // Enhanced spider with AI behaviors
 export function Spider({ position = [6, 0.3, 6] as [number, number, number] }) {
@@ -48,16 +51,67 @@ export function SmartSpider({
   const [aiController] = useState(() => new AIController(grid, cellSize, new THREE.Vector3(...position)));
   const [currentState, setCurrentState] = useState<AIState>('idle');
   const [alertLevel, setAlertLevel] = useState(0);
+  const [enemyId] = useState(() => `spider-${Math.random().toString(36).substr(2, 9)}`);
+  const [health, setHealth] = useState<EnemyHealth | null>(null);
+  const [lastAttackTime, setLastAttackTime] = useState(0);
 
   useEffect(() => {
     if (ref.current) {
       ref.current.position.set(...position);
     }
-  }, [position]);
+    
+    // Initialize health
+    const enemyHealthManager = getEnemyHealthManager();
+    const initialHealth = enemyHealthManager.createEnemy(enemyId, 30);
+    setHealth(initialHealth);
+    
+    return () => {
+      // Cleanup on unmount
+      enemyHealthManager.removeEnemy(enemyId);
+    };
+  }, [position, enemyId]);
 
   useFrame((_, dt) => {
+    const enemyHealthManager = getEnemyHealthManager();
+    const currentHealth = enemyHealthManager.getEnemy(enemyId);
+    
+    // Update health state
+    if (currentHealth && currentHealth !== health) {
+      setHealth(currentHealth);
+    }
+    
+    // If dead, don't update AI, just handle death animation
+    if (currentHealth?.isDead) {
+      const timeSinceDeath = currentHealth.deathTime ? Date.now() - currentHealth.deathTime : 0;
+      const deathProgress = Math.min(timeSinceDeath / 1500, 1); // 1.5 second death animation
+      
+      // Death animation: scale down and fade
+      const scale = 1 - deathProgress;
+      const rotation = deathProgress * Math.PI * 4; // Spin while dying
+      
+      ref.current.scale.setScalar(scale);
+      ref.current.rotation.y = rotation;
+      
+      return; // Skip normal AI behavior
+    }
+
     const playerPos = getPhysics().playerBody.position;
     const playerVec = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
+    const dist = ref.current.position.distanceTo(playerVec);
+    
+    // Player can damage spider with action key when close
+    if (dist < 1.5 && getInput().state.action) {
+      const now = Date.now();
+      if (now - lastAttackTime > 500) { // 500ms cooldown
+        const justDied = enemyHealthManager.damageEnemy(enemyId, 15);
+        if (justDied) {
+          getAudio().play('hit');
+        } else {
+          getAudio().play('hit', 0.5); // Quieter hit sound for non-fatal hits
+        }
+        setLastAttackTime(now);
+      }
+    }
     
     // Update AI controller
     const moveVector = aiController.update(dt, playerVec);
@@ -81,28 +135,40 @@ export function SmartSpider({
       setAlertLevel(newAlert);
     }
     
-    // Attack logic
-    if (aiController.canAttack()) {
-      const dist = ref.current.position.distanceTo(playerVec);
-      if (dist < 1.2) {
-        playerHealth.damage(8 * dt);
-      }
+    // Attack logic - spider damages player
+    if (aiController.canAttack() && dist < 1.2) {
+      playerHealth.damage(8 * dt);
     }
   });
 
-  // Color based on state and alert level
+  // Color based on state, alert level, and health
   const getSpiderColor = () => {
     const baseColor = new THREE.Color('#3c0');
     const alertColor = new THREE.Color('#c30');
+    const hurtColor = new THREE.Color('#960');
+    const dyingColor = new THREE.Color('#300');
     
+    // If dead or dying, show death color
+    if (health?.isDead) {
+      return dyingColor;
+    }
+    
+    // If hurt, mix in hurt color
+    let color = baseColor;
+    if (health && health.hp < health.maxHp) {
+      const hurtRatio = 1 - (health.hp / health.maxHp);
+      color = baseColor.clone().lerp(hurtColor, hurtRatio * 0.6);
+    }
+    
+    // Apply alert state coloring
     switch (currentState) {
       case 'chase':
       case 'attack':
-        return alertColor;
+        return color.clone().lerp(alertColor, 0.7);
       case 'search':
-        return baseColor.clone().lerp(alertColor, 0.5);
+        return color.clone().lerp(alertColor, 0.4);
       default:
-        return baseColor.clone().lerp(alertColor, alertLevel);
+        return color.clone().lerp(alertColor, alertLevel * 0.3);
     }
   };
 
@@ -118,6 +184,11 @@ export function SmartSpider({
     return baseScale + (alertScale - baseScale) * alertLevel;
   };
 
+  // Don't render if dead for too long
+  if (health?.isDead && health.deathTime && (Date.now() - health.deathTime) > 3000) {
+    return null;
+  }
+
   return (
     <group>
       <mesh 
@@ -130,8 +201,8 @@ export function SmartSpider({
         <meshStandardMaterial color={getSpiderColor()} />
       </mesh>
       
-      {/* Alert indicator */}
-      {alertLevel > 0.3 && (
+      {/* Alert indicator - don't show when dead */}
+      {alertLevel > 0.3 && !health?.isDead && (
         <mesh position={[ref.current?.position.x || position[0], (ref.current?.position.y || position[1]) + 0.8, ref.current?.position.z || position[2]]}>
           <sphereGeometry args={[0.05, 8, 8]} />
           <meshStandardMaterial 
@@ -140,6 +211,22 @@ export function SmartSpider({
             emissiveIntensity={alertLevel} 
           />
         </mesh>
+      )}
+      
+      {/* Health bar when damaged but not dead */}
+      {health && !health.isDead && health.hp < health.maxHp && (
+        <group position={[ref.current?.position.x || position[0], (ref.current?.position.y || position[1]) + 0.6, ref.current?.position.z || position[2]]}>
+          {/* Background bar */}
+          <mesh>
+            <planeGeometry args={[0.6, 0.08]} />
+            <meshBasicMaterial color="#300" />
+          </mesh>
+          {/* Health bar */}
+          <mesh position={[-(0.6 * (1 - health.hp / health.maxHp)) / 2, 0, 0.01]}>
+            <planeGeometry args={[0.6 * (health.hp / health.maxHp), 0.06]} />
+            <meshBasicMaterial color="#c30" />
+          </mesh>
+        </group>
       )}
     </group>
   );

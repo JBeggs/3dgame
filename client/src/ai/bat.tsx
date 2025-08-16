@@ -5,6 +5,9 @@ import { getPhysics } from '../game/physics';
 import { AIController, AIState } from './behaviors';
 import { GridNav } from './pathfind';
 import { getProjectileManager } from '../game/projectiles';
+import { getAudio } from '../game/audio';
+import { getEnemyHealthManager, EnemyHealth } from '../game/enemyHealth';
+import { getInput } from '../game/input';
 
 // Flying ranged enemy that shoots projectiles at the player
 export function Bat({ 
@@ -22,6 +25,9 @@ export function Bat({
   const [alertLevel, setAlertLevel] = useState(0);
   const [lastShotTime, setLastShotTime] = useState(0);
   const [wingPhase, setWingPhase] = useState(0);
+  const [enemyId] = useState(() => `bat-${Math.random().toString(36).substr(2, 9)}`);
+  const [health, setHealth] = useState<EnemyHealth | null>(null);
+  const [lastAttackTime, setLastAttackTime] = useState(0);
   
   const projectileManager = getProjectileManager();
   const shotCooldown = 2000; // 2 seconds between shots
@@ -32,19 +38,63 @@ export function Bat({
     if (ref.current) {
       ref.current.position.set(position[0], position[1], position[2]);
     }
-  }, [position]);
+    
+    // Initialize health
+    const enemyHealthManager = getEnemyHealthManager();
+    const initialHealth = enemyHealthManager.createEnemy(enemyId, 40); // Bats have more health than spiders
+    setHealth(initialHealth);
+    
+    return () => {
+      // Cleanup on unmount
+      enemyHealthManager.removeEnemy(enemyId);
+    };
+  }, [position, enemyId]);
 
   useFrame((_, dt) => {
+    const enemyHealthManager = getEnemyHealthManager();
+    const currentHealth = enemyHealthManager.getEnemy(enemyId);
+    
+    // Update health state
+    if (currentHealth && currentHealth !== health) {
+      setHealth(currentHealth);
+    }
+    
+    // If dead, don't render or update AI  
+    if (currentHealth?.isDead) {
+      const timeSinceDeath = currentHealth.deathTime ? Date.now() - currentHealth.deathTime : 0;
+      const deathProgress = Math.min(timeSinceDeath / 2000, 1); // 2 second death animation
+      
+      // Death animation: fall down and fade
+      const fallDistance = deathProgress * 3;
+      ref.current.position.y = Math.max(position[1] - fallDistance, 0.2);
+      ref.current.rotation.x = deathProgress * Math.PI / 2; // Tip forward
+      ref.current.scale.setScalar(1 - deathProgress * 0.7);
+      
+      return; // Skip normal AI behavior
+    }
+
     const playerPos = getPhysics().playerBody.position;
     const playerVec = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
+    const distanceToPlayer = ref.current.position.distanceTo(playerVec);
+    
+    // Player can damage bat with action key when close (harder to hit flying enemy)
+    if (distanceToPlayer < 2.0 && getInput().state.action) {
+      const now = Date.now();
+      if (now - lastAttackTime > 600) { // 600ms cooldown
+        const justDied = enemyHealthManager.damageEnemy(enemyId, 20);
+        if (justDied) {
+          getAudio().play('hit');
+        } else {
+          getAudio().play('hit', 0.4); // Quieter hit sound
+        }
+        setLastAttackTime(now);
+      }
+    }
     
     // Update AI controller (but modify behavior for flying enemy)
     const moveVector = aiController.update(dt, playerVec);
     const currentPos = ref.current.position;
     aiController.updatePosition(currentPos);
-    
-    // Calculate distance to player
-    const distanceToPlayer = currentPos.distanceTo(playerVec);
     
     // Flying movement behavior
     const targetHeight = flightHeight;
@@ -125,6 +175,7 @@ export function Bat({
             `bat-${ref.current.uuid}` // Owner ID
           );
           
+          getAudio().play('fire', 0.6); // Quieter for enemy sounds
           setLastShotTime(now);
         }
         break;
