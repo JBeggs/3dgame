@@ -284,11 +284,11 @@ export function AvatarRoot({
         <meshStandardMaterial color="#ff0000" />
       </mesh>
       
-      {/* Body */}
-      {loadedBody ? (
+      {/* Body - FORCE PRIMITIVE FOR NOW */}
+      {false && loadedBody ? (
         <primitive 
           object={loadedBody.clone()} 
-          scale={[2, 2, 2]} 
+          scale={[5, 5, 5]} 
           position={[0, 0, 0]}
           rotation={[0, 0, 0]}
         />
@@ -298,6 +298,12 @@ export function AvatarRoot({
           <meshStandardMaterial color={primary} />
         </mesh>
       )}
+      
+      {/* Debug: Show primitive body anyway */}
+      <mesh position={[1, 0, 0]} castShadow>
+        <capsuleGeometry args={[0.3, 0.6, 8, 16]} />
+        <meshStandardMaterial color="#00ff00" />
+      </mesh>
       {/* Head - TEMPORARILY DISABLED FOR TESTING */}
       {false && loadedHead ? <primitive object={loadedHead.clone()} position={[0, 0.9, 0]} /> : (
         <mesh position={[0, 0.9, 0]} castShadow>
