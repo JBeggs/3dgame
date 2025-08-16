@@ -13,6 +13,7 @@ const emit = () => subs.forEach((f) => f());
 
 export function setGrid(grid: GridState) { state.grid = grid; emit(); }
 export function setPlayerPos(x: number, z: number) { state.player.x = x; state.player.z = z; emit(); }
+export function getGrid(): GridState { return state.grid; }
 export function getState(): Readonly<State> { return state; }
 
 export function useWorldState() {

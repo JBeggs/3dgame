@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { generateDungeon } from '../gen/mapGen';
 import { getPhysics } from '../game/physics';
 import { Spider, SmartSpider } from '../ai/spider';
+import { Bat } from '../ai/bat';
+import { ProjectileRenderer } from './ProjectileRenderer';
 import { inventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
 import { setGrid } from '../game/worldState';
@@ -113,6 +115,19 @@ export function MapScene() {
         start={[(r.cx + 0.5) * cellSize, 0.3, (r.cy + 0.5) * cellSize] as any} 
       />
     ))}
+    
+    {/* Spawn flying bats in treasure rooms */}
+    {grid.rooms.map((r, i) => (r.tag === 'treasure') && (
+      <Bat 
+        key={`bat-${i}`} 
+        grid={navGrid} 
+        cellSize={cellSize} 
+        position={[(r.cx + 0.5) * cellSize, 2.5, (r.cy + 0.5) * cellSize]} 
+      />
+    ))}
+    
+    {/* Projectile system */}
+    <ProjectileRenderer />
     {coins.map(c => !collected.has(c.id) && (
       <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]}>
         <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />

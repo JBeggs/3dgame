@@ -144,6 +144,7 @@ Completed (ongoing pass)
 - Goal gate and win overlay [done]
 - MiniMap and movement/controls polish [done]
 - AI nav grid with advanced pathfinding and behavioral states [done]
+- Ranged enemies with projectile combat system [done]
 
 Upcoming
 - Dress-up with real glTF parts and animations
