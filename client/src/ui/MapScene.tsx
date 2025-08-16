@@ -6,6 +6,7 @@ import { inventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
 import { setGrid } from '../game/worldState';
 import * as THREE from 'three';
+import { mulberry32 } from '../gen/mapGen';
 import { getInput } from '../game/input';
 
 export function MapScene() {
@@ -78,6 +79,7 @@ export function MapScene() {
   }, [grid]);
   return <>
     <InstancedWalls positions={wallPositions} size={cellSize} />
+    <Decorations rooms={grid.rooms} cellSize={cellSize} seed={defaultSeed} />
     {/* Spawn a spider in every third room */}
     {grid.rooms.map((r, i) => (r.tag === 'lair') && <Spider key={`sp-${i}`} position={[ (r.cx + 0.5)*cellSize, 0.3, (r.cy + 0.5)*cellSize ] as any} />)}
     {coins.map(c => !collected.has(c.id) && (
@@ -153,6 +155,46 @@ function GoalGate({ grid, cellSize }: { grid: any; cellSize: number }) {
       <meshStandardMaterial color={enough ? '#3b8' : '#a33'} />
     </mesh>
   );
+}
+
+function Decorations({ rooms, cellSize, seed }: { rooms: any[]; cellSize: number; seed: number }) {
+  const rnd = mulberry32(seed + 12345);
+  const nodes: React.ReactNode[] = [];
+  for (const r of rooms) {
+    const cx = (r.cx + 0.5) * cellSize;
+    const cz = (r.cy + 0.5) * cellSize;
+    // Torch lights in lairs/treasure rooms
+    if (r.tag === 'lair' || r.tag === 'treasure') {
+      const count = r.tag === 'lair' ? 2 : 1;
+      for (let i = 0; i < count; i++) {
+        const angle = rnd() * Math.PI * 2;
+        const rad = Math.max(0.6, Math.min(r.w, r.h) * 0.3) * cellSize;
+        const x = cx + Math.cos(angle) * rad;
+        const z = cz + Math.sin(angle) * rad;
+        nodes.push(
+          <group key={`torch-${r.cx}-${r.cy}-${i}`} position={[x, 0.9, z] as any}>
+            <pointLight color={'#ffb347'} intensity={0.7} distance={4} decay={2} />
+            <mesh>
+              <sphereGeometry args={[0.08, 8, 8]} />
+              <meshStandardMaterial emissive={'#ff8c00'} color={'#552200'} emissiveIntensity={1.2} />
+            </mesh>
+          </group>
+        );
+      }
+    }
+    // Simple props in normal rooms
+    if (r.tag === 'normal' && rnd() < 0.4) {
+      const px = cx + (rnd() - 0.5) * Math.max(0.5, r.w * 0.3) * cellSize;
+      const pz = cz + (rnd() - 0.5) * Math.max(0.5, r.h * 0.3) * cellSize;
+      nodes.push(
+        <mesh key={`prop-${r.cx}-${r.cy}`} position={[px, 0.4, pz] as any} castShadow>
+          <boxGeometry args={[0.4, 0.8, 0.4]} />
+          <meshStandardMaterial color={'#6b6f7a'} />
+        </mesh>
+      );
+    }
+  }
+  return <>{nodes}</>;
 }
 
 
