@@ -13,7 +13,8 @@ function App() {
   
   return (
     <div style={{ width: '100%', height: '100%' }}>
-      <GameCanvas showConfigPanels={false} />
+      {/* Only show game canvas and controls when in game mode */}
+      {currentScreen === 'game' && <GameCanvas showConfigPanels={false} />}
       
       {/* Multi-page flow */}
       {currentScreen === 'landing' && (
@@ -26,6 +27,29 @@ function App() {
       
       {currentScreen === 'rooms' && (
         <RoomSelectionScreen onContinue={() => setCurrentScreen('game')} />
+      )}
+      
+      {/* Quick bypass for development - remove this in production */}
+      {currentScreen !== 'game' && (
+        <button
+          onClick={() => setCurrentScreen('game')}
+          style={{
+            position: 'fixed',
+            top: 20,
+            right: 20,
+            background: '#22c55e',
+            color: 'white',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            zIndex: 1000
+          }}
+        >
+          🎮 Skip to Game
+        </button>
       )}
     </div>
   );

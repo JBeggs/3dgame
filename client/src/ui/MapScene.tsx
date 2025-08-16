@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { generateDungeon } from '../gen/mapGen';
+import { generateLobby, defaultLobbyConfig, LobbyConfig } from '../gen/lobbyGen';
 import { getPhysics } from '../game/physics';
 import { Spider, SmartSpider } from '../ai/spider';
 import { Bat } from '../ai/bat';
@@ -21,9 +22,21 @@ import { getEnemyHealthManager } from '../game/enemyHealth';
 import { calculateRoomDepth, getScaledEnemyStats } from '../game/difficultyScaling';
 import { ParticleSystem } from '../effects/ParticleSystem';
 
+
 export function MapScene() {
   const mapState = useMapState();
-  const grid = useMemo(() => generateDungeon(mapState.seed, 48, 36, mapState.rooms), [mapState.seed, mapState.rooms, mapState.generation]);
+  
+  // Lobby mode state - start with lobby for movement testing
+  const [useLobby, setUseLobby] = useState(true);
+  const [lobbyConfig, setLobbyConfig] = useState<LobbyConfig>(defaultLobbyConfig);
+  
+  const grid = useMemo(() => {
+    if (useLobby) {
+      return generateLobby(lobbyConfig);
+    } else {
+      return generateDungeon(mapState.seed, 48, 36, mapState.rooms);
+    }
+  }, [mapState.seed, mapState.rooms, mapState.generation, useLobby, lobbyConfig]);
   const navGrid = useMemo(() => createNavGrid(grid), [grid]);
   const cellSize = 1.2; // expand grid scale a bit for wider corridors
   // Coins: one at many room centers; deterministic IDs
@@ -118,8 +131,12 @@ export function MapScene() {
   }, [grid]);
   return <>
     <InstancedWalls positions={wallPositions} size={cellSize} />
-    <Decorations rooms={grid.rooms} cellSize={cellSize} seed={mapState.seed} />
-    {/* Spawn smart spiders in lair rooms with difficulty scaling */}
+    
+    {/* Only show decorations and enemies if not in lobby mode */}
+    {!useLobby && (
+      <>
+        <Decorations rooms={grid.rooms} cellSize={cellSize} seed={mapState.seed} />
+        {/* Spawn smart spiders in lair rooms with difficulty scaling */}
     {grid.rooms.flatMap((r, roomIndex) => {
       if (r.tag !== 'lair') return [];
       
@@ -267,13 +284,31 @@ export function MapScene() {
           />
         );
       });
-    })}
+        })}
+      </>
+    )}
     
-    {/* Projectile system */}
+    {/* Always show projectile system and particles */}
     <ProjectileRenderer />
-    
-    {/* Particle effects */}
     <ParticleSystem />
+    
+    {/* Simple lobby content - minimal for movement testing */}
+    {useLobby && (
+      <>        
+        {/* Center marker so player knows where they are */}
+        <mesh position={[0, 0.05, 0]}>
+          <cylinderGeometry args={[0.3, 0.3, 0.1, 16]} />
+          <meshStandardMaterial 
+            color="#4ade80" 
+            emissive="#22c55e" 
+            emissiveIntensity={0.2}
+            transparent
+            opacity={0.8}
+          />
+        </mesh>
+      </>
+    )}
+    
     {coins.map(c => !collected.has(c.id) && (
       <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]}>
         <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />

@@ -120,14 +120,19 @@ let audioManager: AudioManager | null = null;
 export function getAudio(): AudioManager {
   if (!audioManager) {
     audioManager = new AudioManager();
-    // Auto-initialize on first user interaction
+    // Auto-initialize on first user interaction (iOS-specific fixes)
     const initOnInteraction = () => {
+      console.log('Initializing audio on user interaction (iOS)'); // Debug
       audioManager!.init();
       document.removeEventListener('click', initOnInteraction);
       document.removeEventListener('keydown', initOnInteraction);
+      document.removeEventListener('touchstart', initOnInteraction);
+      document.removeEventListener('touchend', initOnInteraction);
     };
     document.addEventListener('click', initOnInteraction, { once: true });
     document.addEventListener('keydown', initOnInteraction, { once: true });
+    document.addEventListener('touchstart', initOnInteraction, { once: true, passive: true }); // iOS
+    document.addEventListener('touchend', initOnInteraction, { once: true, passive: true }); // iOS
   }
   return audioManager;
 }

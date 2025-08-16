@@ -120,23 +120,28 @@ export function TouchControls() {
     }
     function onTouchStart(e: TouchEvent) { 
       e.preventDefault(); 
+      e.stopPropagation(); // Prevent iOS from interfering
       touchActive = true;
       setIsActive(true);
       const t = e.touches[0]; 
-      compute(t.clientX, t.clientY); 
+      compute(t.clientX, t.clientY);
+      console.log('Touch start detected on iOS'); // iOS-specific debug
     }
     function onTouchMove(e: TouchEvent) { 
       if (!touchActive) return; 
       e.preventDefault(); 
+      e.stopPropagation();
       const t = e.touches[0]; 
-      compute(t.clientX, t.clientY); 
+      if (t) compute(t.clientX, t.clientY); // Extra safety for iOS
     }
     function onTouchEnd(e: TouchEvent) { 
       e.preventDefault(); 
+      e.stopPropagation();
       touchActive = false; 
       setIsActive(false);
       targetInput.current.x = 0;
       targetInput.current.y = 0;
+      console.log('Touch end detected on iOS'); // iOS-specific debug
     }
     function onMouseDown(e: MouseEvent) { 
       touchActive = true; 
@@ -185,7 +190,7 @@ export function TouchControls() {
         ref={padRef}
         onContextMenu={(e) => { e.preventDefault(); }}
         style={{ 
-          position: 'absolute', 
+          position: 'fixed', // Changed from absolute for iOS
           left: 12, 
           bottom: 'calc(12px + env(safe-area-inset-bottom))', 
           width: 140, 
@@ -199,14 +204,19 @@ export function TouchControls() {
           WebkitUserSelect: 'none',
           WebkitTouchCallout: 'none',
           cursor: 'pointer', 
-          zIndex: 10, 
+          zIndex: 1000, // Higher z-index for iOS
           pointerEvents: 'auto' as any,
           border: `2px solid ${isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`,
           boxShadow: isActive ? 'inset 0 0 20px rgba(255,255,255,0.1)' : 'none',
           transition: 'all 0.2s ease',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          // iOS-specific fixes
+          WebkitTransform: 'translate3d(0,0,0)', // Force hardware acceleration
+          transform: 'translate3d(0,0,0)',
+          backfaceVisibility: 'hidden' as any,
+          WebkitBackfaceVisibility: 'hidden'
         }}
       >
         {/* Deadzone indicator */}
@@ -242,11 +252,11 @@ export function TouchControls() {
         ref={jumpRef}
         onMouseDown={(e) => { e.preventDefault(); getInput().setJump(true); }}
         onMouseUp={(e) => { e.preventDefault(); getInput().setJump(false); }}
-        onTouchStart={(e) => { e.preventDefault(); getInput().setJump(true); }}
-        onTouchEnd={(e) => { e.preventDefault(); getInput().setJump(false); }}
-        onTouchCancel={(e) => { e.preventDefault(); getInput().setJump(false); }}
+        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setJump(true); console.log('Jump touch start'); }}
+        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setJump(false); console.log('Jump touch end'); }}
+        onTouchCancel={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setJump(false); }}
         style={{ 
-          position: 'absolute', 
+          position: 'fixed', // Changed for iOS
           right: 16, 
           bottom: 'calc(110px + env(safe-area-inset-bottom))', 
           width: 72, 
@@ -255,25 +265,29 @@ export function TouchControls() {
           background: 'rgba(255,255,255,0.08)', 
           color: '#fff', 
           border: '1px solid rgba(255,255,255,0.2)', 
-          zIndex: 10, 
+          zIndex: 1000, // Higher for iOS
           pointerEvents: 'auto' as any,
           touchAction: 'manipulation',
           userSelect: 'none',
           WebkitUserSelect: 'none',
           WebkitTouchCallout: 'none',
           fontSize: '12px',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          // iOS-specific fixes
+          WebkitTransform: 'translate3d(0,0,0)',
+          transform: 'translate3d(0,0,0)',
+          backfaceVisibility: 'hidden' as any
         }}
       >Jump</button>
       <button
         ref={actionRef}
         onMouseDown={(e) => { e.preventDefault(); getInput().setAction(true); }}
         onMouseUp={(e) => { e.preventDefault(); getInput().setAction(false); }}
-        onTouchStart={(e) => { e.preventDefault(); getInput().setAction(true); }}
-        onTouchEnd={(e) => { e.preventDefault(); getInput().setAction(false); }}
-        onTouchCancel={(e) => { e.preventDefault(); getInput().setAction(false); }}
+        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setAction(true); console.log('Action touch start'); }}
+        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setAction(false); console.log('Action touch end'); }}
+        onTouchCancel={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setAction(false); }}
         style={{ 
-          position: 'absolute', 
+          position: 'fixed', // Changed for iOS
           right: 16, 
           bottom: 'calc(30px + env(safe-area-inset-bottom))', 
           width: 72, 
@@ -282,16 +296,37 @@ export function TouchControls() {
           background: 'rgba(255,255,255,0.08)', 
           color: '#fff', 
           border: '1px solid rgba(255,255,255,0.2)', 
-          zIndex: 10, 
+          zIndex: 1000, // Higher for iOS
           pointerEvents: 'auto' as any,
           touchAction: 'manipulation',
           userSelect: 'none',
           WebkitUserSelect: 'none',
           WebkitTouchCallout: 'none',
           fontSize: '10px',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          // iOS-specific fixes
+          WebkitTransform: 'translate3d(0,0,0)',
+          transform: 'translate3d(0,0,0)',
+          backfaceVisibility: 'hidden' as any
         }}
       >Action</button>
+      
+      {/* iOS Debug indicator */}
+      <div style={{
+        position: 'fixed',
+        top: 10,
+        right: 10,
+        background: 'rgba(0,0,0,0.7)',
+        color: 'white',
+        padding: '8px',
+        borderRadius: '4px',
+        fontSize: '12px',
+        zIndex: 1001,
+        fontFamily: 'monospace'
+      }}>
+        Touch: {isActive ? '✅' : '❌'} | 
+        Input: {smoothedInput.current.x.toFixed(2)},{smoothedInput.current.y.toFixed(2)}
+      </div>
     </>
   );
 }

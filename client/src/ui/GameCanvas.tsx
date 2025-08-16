@@ -21,6 +21,7 @@ import { Nameplate, idToColor } from './Nameplate';
 import { getPhysics } from '../game/physics';
 import { LobbyPanel } from './LobbyPanel';
 
+
 function Scene() {
   const net = useNet();
   const physics = getPhysics();
@@ -103,19 +104,48 @@ export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: bo
         <color attach="background" args={[0.06, 0.07, 0.1]} />
         <Suspense fallback={null}>
           <Scene />
-          <Interactables />
+          {/* Disable complex interactables for lobby testing */}
+          {/* <Interactables /> */}
         </Suspense>
         <OrbitControls makeDefault enableDamping enablePan={false} enableZoom={false} />
         <StatsGl />
       </Canvas>
+      {/* Simplified UI for lobby testing */}
       <HUD />
-      <LobbyPanel />
-      {showConfigPanels ? <AvatarPanel /> : null}
       <TouchControls />
-      <GamepadControls />
-      {showConfigPanels ? <MapControlsPanel /> : null}
-      <MiniMap />
-      <WinOverlay visible={won} />
+      
+      {/* Hide complex panels for now - uncomment when needed */}
+      {/* <LobbyPanel /> */}
+      {/* {showConfigPanels ? <AvatarPanel /> : null} */}
+      {/* <GamepadControls /> */}
+      {/* {showConfigPanels ? <MapControlsPanel /> : null} */}
+      {/* <MiniMap /> */}
+      {/* <WinOverlay visible={won} /> */}
+      
+      {/* Simple lobby mode toggle */}
+      <div style={{
+        position: 'fixed',
+        bottom: 20,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        background: 'rgba(0, 0, 0, 0.8)',
+        color: 'white',
+        padding: '8px 16px',
+        borderRadius: '6px',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        🏃‍♂️ LOBBY MODE - Simple movement testing
+        <div style={{
+          fontSize: '11px',
+          opacity: 0.7,
+          marginTop: '4px'
+        }}>
+          Use WASD/arrows, space to jump, or touch controls
+        </div>
+      </div>
     </div>
   );
 }
