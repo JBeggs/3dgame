@@ -33,7 +33,31 @@ export function LandingScreen({ onStart }: { onStart: () => void }) {
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-          <button onClick={() => { try { getInput().attach(); } catch {} ; onStart(); }}>Start</button>
+          <button 
+            onClick={() => { 
+              try { 
+                // Force reattach input system for iOS Safari
+                const input = getInput();
+                input.detach();
+                setTimeout(() => {
+                  input.attach();
+                }, 100);
+              } catch {} 
+              onStart(); 
+            }}
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              background: '#059669',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            Start Game
+          </button>
         </div>
       </div>
     </div>

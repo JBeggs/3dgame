@@ -26,16 +26,30 @@ export function TouchControls() {
       }
       input.setVector(dx, -dy);
     }
-    function onTouchStart(e: TouchEvent) { active = true; const t = e.touches[0]; compute(t.clientX, t.clientY); }
-    function onTouchMove(e: TouchEvent) { if (!active) return; const t = e.touches[0]; compute(t.clientX, t.clientY); }
-    function onTouchEnd() { active = false; input.setVector(0, 0); }
+    function onTouchStart(e: TouchEvent) { 
+      e.preventDefault(); 
+      active = true; 
+      const t = e.touches[0]; 
+      compute(t.clientX, t.clientY); 
+    }
+    function onTouchMove(e: TouchEvent) { 
+      if (!active) return; 
+      e.preventDefault(); 
+      const t = e.touches[0]; 
+      compute(t.clientX, t.clientY); 
+    }
+    function onTouchEnd(e: TouchEvent) { 
+      e.preventDefault(); 
+      active = false; 
+      input.setVector(0, 0); 
+    }
     function onMouseDown(e: MouseEvent) { active = true; compute(e.clientX, e.clientY); }
     function onMouseMove(e: MouseEvent) { if (!active) return; compute(e.clientX, e.clientY); }
     function onMouseUp() { if (!active) return; active = false; input.setVector(0, 0); }
     function onMouseLeave() { if (!active) return; active = false; input.setVector(0, 0); }
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchmove', onTouchMove, { passive: true });
-    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd, { passive: false });
     el.addEventListener('mousedown', onMouseDown, { passive: true } as any);
     el.addEventListener('mousemove', onMouseMove, { passive: true } as any);
     el.addEventListener('mouseup', onMouseUp, { passive: true } as any);
@@ -55,15 +69,50 @@ export function TouchControls() {
       <div
         ref={padRef}
         onContextMenu={(e) => { e.preventDefault(); }}
-        style={{ position: 'absolute', left: 12, bottom: 'calc(12px + env(safe-area-inset-bottom))', width: 140, height: 140, borderRadius: 70, background: 'rgba(255,255,255,0.06)', touchAction: 'none', userSelect: 'none', cursor: 'pointer', zIndex: 10, pointerEvents: 'auto' as any }}
+        style={{ 
+          position: 'absolute', 
+          left: 12, 
+          bottom: 'calc(12px + env(safe-area-inset-bottom))', 
+          width: 140, 
+          height: 140, 
+          borderRadius: 70, 
+          background: 'rgba(255,255,255,0.06)', 
+          touchAction: 'none', 
+          userSelect: 'none', 
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          cursor: 'pointer', 
+          zIndex: 10, 
+          pointerEvents: 'auto' as any,
+          border: '2px solid rgba(255,255,255,0.1)'
+        }}
       />
       <button
         ref={jumpRef}
-        onMouseDown={() => getInput().setJump(true)}
-        onMouseUp={() => getInput().setJump(false)}
-        onTouchStart={() => getInput().setJump(true)}
-        onTouchEnd={() => getInput().setJump(false)}
-        style={{ position: 'absolute', right: 16, bottom: 'calc(110px + env(safe-area-inset-bottom))', width: 72, height: 72, borderRadius: 36, background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', zIndex: 10, pointerEvents: 'auto' as any }}
+        onMouseDown={(e) => { e.preventDefault(); getInput().setJump(true); }}
+        onMouseUp={(e) => { e.preventDefault(); getInput().setJump(false); }}
+        onTouchStart={(e) => { e.preventDefault(); getInput().setJump(true); }}
+        onTouchEnd={(e) => { e.preventDefault(); getInput().setJump(false); }}
+        onTouchCancel={(e) => { e.preventDefault(); getInput().setJump(false); }}
+        style={{ 
+          position: 'absolute', 
+          right: 16, 
+          bottom: 'calc(110px + env(safe-area-inset-bottom))', 
+          width: 72, 
+          height: 72, 
+          borderRadius: 36, 
+          background: 'rgba(255,255,255,0.08)', 
+          color: '#fff', 
+          border: '1px solid rgba(255,255,255,0.2)', 
+          zIndex: 10, 
+          pointerEvents: 'auto' as any,
+          touchAction: 'manipulation',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          fontSize: '12px',
+          fontWeight: 'bold'
+        }}
       >Jump</button>
     </>
   );
