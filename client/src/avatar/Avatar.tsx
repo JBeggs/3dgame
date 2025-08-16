@@ -284,13 +284,13 @@ export function AvatarRoot({
         <meshStandardMaterial color="#00ff00" />
       </mesh>
       
-      {/* Body - GLB RENDERING */}
+      {/* Body - GLB RENDERING WITH PROPER SCALING */}
       {loadedBody ? (
         <primitive 
           object={loadedBody.clone()} 
-          scale={[5, 5, 5]} 
+          scale={[0.5, 0.5, 0.5]} 
           position={[0, 0, 0]}
-          rotation={[0, Math.PI, 0]}
+          rotation={[0, 0, 0]}
         />
       ) : (
         <mesh castShadow>
@@ -299,13 +299,13 @@ export function AvatarRoot({
         </mesh>
       )}
       
-      {/* Head */}
+      {/* Head - GLB RENDERING WITH PROPER SCALING */}
       {loadedHead ? (
         <primitive 
           object={loadedHead.clone()} 
           position={[0, 0.9, 0]} 
-          scale={[5, 5, 5]}
-          rotation={[0, Math.PI, 0]}
+          scale={[0.5, 0.5, 0.5]}
+          rotation={[0, 0, 0]}
         />
       ) : (
         <mesh position={[0, 0.9, 0]} castShadow>
@@ -313,12 +313,12 @@ export function AvatarRoot({
           <meshStandardMaterial color={secondary} />
         </mesh>
       )}
-      {/* Outfit */}
+      {/* Outfit - GLB RENDERING WITH PROPER SCALING */}
       {loadedOutfit ? (
         <primitive 
           object={loadedOutfit.clone()} 
-          scale={[5, 5, 5]}
-          rotation={[0, Math.PI, 0]}
+          scale={[0.5, 0.5, 0.5]}
+          rotation={[0, 0, 0]}
         />
       ) : (
         <mesh position={[0.35, 0.5, 0]} castShadow>
@@ -330,7 +330,12 @@ export function AvatarRoot({
       {/* Hat */}
       {cfg.accessories.hat && (
         loadedAccessories.hat ? (
-          <primitive object={loadedAccessories.hat.clone()} position={[0, 1.2, 0]} />
+          <primitive 
+            object={loadedAccessories.hat.clone()} 
+            position={[0, 1.2, 0]} 
+            scale={[0.5, 0.5, 0.5]}
+            rotation={[0, 0, 0]}
+          />
         ) : (
           <mesh position={[0, 1.2, 0]} castShadow>
             <coneGeometry args={[0.2, 0.3, 8]} />
@@ -342,7 +347,12 @@ export function AvatarRoot({
       {/* Cape */}
       {cfg.accessories.cape && (
         loadedAccessories.cape ? (
-          <primitive object={loadedAccessories.cape.clone()} position={[0, 0.7, -0.15]} />
+          <primitive 
+            object={loadedAccessories.cape.clone()} 
+            position={[0, 0.7, -0.15]} 
+            scale={[0.5, 0.5, 0.5]}
+            rotation={[0, 0, 0]}
+          />
         ) : (
           <mesh position={[0, 0.7, -0.15]} rotation={[0,0,0]} castShadow>
             <planeGeometry args={[0.4, 0.6]} />
@@ -354,7 +364,12 @@ export function AvatarRoot({
       {/* Glasses */}
       {cfg.accessories.glasses && (
         loadedAccessories.glasses ? (
-          <primitive object={loadedAccessories.glasses.clone()} position={[0, 0.9, 0.2]} />
+          <primitive 
+            object={loadedAccessories.glasses.clone()} 
+            position={[0, 0.9, 0.2]} 
+            scale={[0.5, 0.5, 0.5]}
+            rotation={[0, 0, 0]}
+          />
         ) : (
           <group position={[0, 0.9, 0.2]}>
             <mesh position={[-0.1, 0, 0]} castShadow>
@@ -376,7 +391,12 @@ export function AvatarRoot({
       {/* Necklace */}
       {cfg.accessories.necklace && (
         loadedAccessories.necklace ? (
-          <primitive object={loadedAccessories.necklace.clone()} position={[0, 0.6, 0]} />
+          <primitive 
+            object={loadedAccessories.necklace.clone()} 
+            position={[0, 0.6, 0]} 
+            scale={[0.5, 0.5, 0.5]}
+            rotation={[0, 0, 0]}
+          />
         ) : (
           <mesh position={[0, 0.6, 0]} castShadow>
             <torusGeometry args={[0.15, 0.02, 8, 16]} />
