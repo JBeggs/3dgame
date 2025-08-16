@@ -35,7 +35,16 @@ export function AvatarRoot({
   const [wasGrounded, setWasGrounded] = useState(true);
   const landingTimerRef = useRef(0);
 
-  useEffect(() => { loadGLTFPart(cfg.bodyId).then(setLoadedBody); }, [cfg.bodyId]);
+  useEffect(() => { 
+    console.log(`🔄 Avatar: Loading body part "${cfg.bodyId}"...`);
+    loadGLTFPart(cfg.bodyId).then((result) => {
+      console.log(`🔄 Avatar: Body loading result for "${cfg.bodyId}":`, result);
+      setLoadedBody(result);
+    }).catch((error) => {
+      console.error(`❌ Avatar: Body loading failed for "${cfg.bodyId}":`, error);
+      setLoadedBody(null);
+    });
+  }, [cfg.bodyId]);
   useEffect(() => { loadGLTFPart(cfg.headId).then(setLoadedHead); }, [cfg.headId]);
   useEffect(() => { loadGLTFPart(cfg.outfitId).then(setLoadedOutfit); }, [cfg.outfitId]);
 
