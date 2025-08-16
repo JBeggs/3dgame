@@ -60,7 +60,21 @@ export function AvatarRoot({
   // If the body GLTF has animations, set up a mixer and find all animation clips
   useEffect(() => {
     const root = loadedBody as any;
-    if (!root || !root.animations || root.animations.length === 0) return;
+    console.log('🔍 Checking for animations in body:', {
+      hasRoot: !!root,
+      hasAnimations: !!root?.animations,
+      animationCount: root?.animations?.length || 0,
+      bodyId: cfg.bodyId
+    });
+    
+    if (!root || !root.animations || root.animations.length === 0) {
+      console.log('🎭 No animations found in body GLB - will use primitive shapes');
+      return;
+    }
+    
+    console.log(`🎬 Found ${root.animations.length} animation clips in ${cfg.bodyId}:`, 
+      root.animations.map((a: THREE.AnimationClip) => `"${a.name}" (${a.duration.toFixed(1)}s)`));
+    
     const mixer = new THREE.AnimationMixer(root);
     mixerRef.current = mixer;
     
@@ -71,33 +85,46 @@ export function AvatarRoot({
     const fallClip = root.animations.find((a: THREE.AnimationClip) => /fall/i.test(a.name));
     const landClip = root.animations.find((a: THREE.AnimationClip) => /land/i.test(a.name));
     
+    console.log('🎯 Animation mapping:', {
+      idle: idleClip?.name || 'NONE',
+      run: runClip?.name || 'NONE', 
+      jump: jumpClip?.name || 'NONE',
+      fall: fallClip?.name || 'NONE',
+      land: landClip?.name || 'NONE'
+    });
+    
     // Set up actions with proper settings
     if (idleClip) {
       const action = mixer.clipAction(idleClip);
       action.setLoop(THREE.LoopRepeat, Infinity);
       actionsRef.current.idle = action.play();
+      console.log('✅ Idle animation ready:', idleClip.name);
     }
     if (runClip) {
       const action = mixer.clipAction(runClip);
       action.setLoop(THREE.LoopRepeat, Infinity);
       actionsRef.current.run = action.play();
+      console.log('✅ Run animation ready:', runClip.name);
     }
     if (jumpClip) {
       const action = mixer.clipAction(jumpClip);
       action.setLoop(THREE.LoopOnce, 1);
       action.clampWhenFinished = true;
       actionsRef.current.jump = action;
+      console.log('✅ Jump animation ready:', jumpClip.name);
     }
     if (fallClip) {
       const action = mixer.clipAction(fallClip);
       action.setLoop(THREE.LoopRepeat, Infinity);
       actionsRef.current.fall = action;
+      console.log('✅ Fall animation ready:', fallClip.name);
     }
     if (landClip) {
       const action = mixer.clipAction(landClip);
       action.setLoop(THREE.LoopOnce, 1);
       action.clampWhenFinished = true;
       actionsRef.current.land = action;
+      console.log('✅ Land animation ready:', landClip.name);
     }
     
     return () => { mixer.stopAllAction(); };
@@ -131,6 +158,7 @@ export function AvatarRoot({
     }
     
     if (newState !== animState) {
+      console.log(`🎭 Animation state: ${animState} → ${newState} (speed: ${speed.toFixed(1)}, grounded: ${isGrounded})`);
       setAnimState(newState);
     }
     setWasGrounded(isGrounded);

@@ -64,15 +64,23 @@ const net = connect();
 
 // Expose avatar API for console testing
 import { avatarStore } from './avatar/store';
+import { clearAvatarCache } from './avatar/loader';
 (window as any).gameApi = {
   ...((window as any).gameApi || {}),
   setAvatar: avatarStore.set.bind(avatarStore),
   getAvatar: avatarStore.get.bind(avatarStore),
+  clearAvatarCache,
   testAvatar: () => {
     console.log('🎭 Current avatar config:', avatarStore.get());
     console.log('🎨 Testing color change...');
     avatarStore.set({ colors: { primary: '#ff0000', secondary: '#00ff00' } });
     console.log('✅ Try: window.gameApi.setAvatar({ colors: { primary: "#0000ff" } })');
+  },
+  testAnimations: () => {
+    console.log('🎬 Testing animation system...');
+    clearAvatarCache();
+    avatarStore.set({ bodyId: 'bodyA' }); // Force reload
+    console.log('✅ Cache cleared and bodyA reloading. Check console for animation debug info.');
   }
 };
 
