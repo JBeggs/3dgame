@@ -138,9 +138,15 @@ Completed in first pass
 - Repo initialized with client/server, Three.js + R3F, cannon-es, Vite.
 - Basic procedural map, physics, HUD, inventory, collectibles, door unlock, spider enemy, multiplayer sync, mobile joystick, prompts.
 
+Completed (ongoing pass)
+- Avatar selection & color (glTF loader with primitive fallback) [done]
+- Procedural dungeon with rooms/loops, room-based spawners and coins [done]
+- Goal gate and win overlay [done]
+- MiniMap and movement/controls polish [done]
+
 Upcoming
-- Avatar selection & dress-up (modular glTF + color/material variants).
-- Asset compression pipeline (KTX2/Draco/Meshopt) and size audit to keep <10MB.
-- Improved generator and AI nav grid; network authority for gameplay.
+- Dress-up with real glTF parts and animations
+- Asset compression pipeline (KTX2/Draco/Meshopt) and size audit to keep <10MB
+- AI nav grid; network authority for gameplay
 
 
