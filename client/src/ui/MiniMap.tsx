@@ -28,8 +28,8 @@ export function MiniMap() {
 
   return (
     <>
-      <button onClick={() => setOpen(v => !v)} style={{ position: 'absolute', right: 10, bottom: open ? 140 : 10, zIndex: 12, background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '4px 8px', fontFamily: 'monospace' }}>{open ? 'Hide Map' : 'Show Map'}</button>
-      {open && <canvas ref={cvsRef} width={200} height={150} style={{ position: 'absolute', right: 10, bottom: 10, background: 'rgba(0,0,0,0.4)', borderRadius: 6 }} />}
+      <button onClick={() => setOpen(v => !v)} style={{ position: 'absolute', right: 10, top: 10, zIndex: 12, background: 'rgba(0,0,0,0.4)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, padding: '4px 8px', fontFamily: 'monospace' }}>{open ? 'Hide Map' : 'Show Map'}</button>
+      {open && <canvas ref={cvsRef} width={200} height={150} style={{ position: 'absolute', right: 10, top: 44, background: 'rgba(0,0,0,0.4)', borderRadius: 6 }} />}
     </>
   );
 }

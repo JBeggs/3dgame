@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MapControlsPanel } from './MapControlsPanel';
 import { AvatarPanel } from './AvatarPanel';
 import { avatarStore } from '../avatar/store';
+import { getInput } from '../game/input';
 
 export function LandingScreen({ onStart }: { onStart: () => void }) {
   const [showAvatar, setShowAvatar] = useState(true);
@@ -32,7 +33,7 @@ export function LandingScreen({ onStart }: { onStart: () => void }) {
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-          <button onClick={onStart}>Start</button>
+          <button onClick={() => { try { getInput().attach(); } catch {} ; onStart(); }}>Start</button>
         </div>
       </div>
     </div>
