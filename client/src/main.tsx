@@ -81,6 +81,18 @@ import { clearAvatarCache } from './avatar/loader';
     clearAvatarCache();
     avatarStore.set({ bodyId: 'bodyA' }); // Force reload
     console.log('✅ Cache cleared and bodyA reloading. Check console for animation debug info.');
+  },
+  testBodyB: () => {
+    console.log('🧠 Testing BrainStem model (bodyB) - should have animations...');
+    clearAvatarCache();
+    avatarStore.set({ bodyId: 'bodyB' });
+    console.log('✅ Switched to bodyB. Check console for animation debug info.');
+  },
+  testBodyC: () => {
+    console.log('🤖 Testing RiggedFigure model (bodyC)...');
+    clearAvatarCache();
+    avatarStore.set({ bodyId: 'bodyC' });
+    console.log('✅ Switched to bodyC. Check console for animation debug info.');
   }
 };
 
