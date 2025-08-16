@@ -14,6 +14,7 @@ import { useInventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
 import { MiniMap } from './MiniMap';
 import { MapControlsPanel } from './MapControlsPanel';
+import { GamepadControls } from './GamepadControls';
 import { avatarStore } from '../avatar/store';
 import { useEffect } from 'react';
 
@@ -83,6 +84,7 @@ export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: bo
       <HUD />
       {showConfigPanels ? <AvatarPanel /> : null}
       <TouchControls />
+      <GamepadControls />
       {showConfigPanels ? <MapControlsPanel /> : null}
       <MiniMap />
       <WinOverlay visible={won} />
