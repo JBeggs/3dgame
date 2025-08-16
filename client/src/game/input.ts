@@ -71,8 +71,10 @@ export function getInput(): InputAPI {
   }
 
   function setVector(right: number, forward: number) {
-    state.right = clamp(right);
-    state.forward = clamp(forward);
+    // Clamp tiny values to prevent floating point drift
+    const threshold = 1e-10;
+    state.right = Math.abs(right) < threshold ? 0 : clamp(right);
+    state.forward = Math.abs(forward) < threshold ? 0 : clamp(forward);
   }
   function setJump(v: boolean) {
     state.jump = v;
@@ -107,7 +109,9 @@ export function getInput(): InputAPI {
         // Only reset if no keyboard input is active
         if (!keys.has('KeyW') && !keys.has('KeyS') && !keys.has('KeyA') && !keys.has('KeyD') && 
             !keys.has('ArrowUp') && !keys.has('ArrowDown') && !keys.has('ArrowLeft') && !keys.has('ArrowRight')) {
-          setVector(0, 0);
+          // Ensure we set exactly zero to prevent floating point drift
+          state.right = 0;
+          state.forward = 0;
         }
       }
       

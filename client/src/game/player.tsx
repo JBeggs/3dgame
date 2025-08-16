@@ -42,24 +42,31 @@ export function PlayerMesh() {
 
   useFrame((_, dt) => {
     const { playerBody } = physics;
-    const move = new THREE.Vector3(input.state.right, 0, -input.state.forward);
+    // Apply threshold to actual movement to prevent tiny drift
+    const rightInput = Math.abs(input.state.right) > 0.01 ? input.state.right : 0;
+    const forwardInput = Math.abs(input.state.forward) > 0.01 ? input.state.forward : 0;
+    const move = new THREE.Vector3(rightInput, 0, -forwardInput);
     const speed = 5.5;
     if (move.lengthSq() > 1) move.normalize();
     
-    // Light debug logging - only log when input changes
-    const hasInput = input.state.right !== 0 || input.state.forward !== 0 || input.state.jump;
+    // Fix floating point precision issues - use proper threshold
+    const threshold = 0.01; // Ignore tiny gamepad/touch drift
+    const hasRealInput = Math.abs(input.state.right) > threshold || Math.abs(input.state.forward) > threshold || input.state.jump;
     
-    // DEBUG: Always log for now to see what's happening
-    console.log('🔧 Debug input state:', {
-      right: input.state.right,
-      forward: input.state.forward, 
-      jump: input.state.jump,
-      hasInput: hasInput
-    });
+    // DEBUG: Show what's happening with thresholds
+    if (Math.abs(input.state.right) > 1e-10 || Math.abs(input.state.forward) > 1e-10) {
+      console.log('🔧 Input drift detected:', {
+        right: input.state.right,
+        forward: input.state.forward,
+        rightAbs: Math.abs(input.state.right),
+        forwardAbs: Math.abs(input.state.forward),
+        aboveThreshold: hasRealInput
+      });
+    }
     
-    if (hasInput) {
-      console.log('🎮 Movement:', {
-        direction: `${input.state.right.toFixed(1)}, ${input.state.forward.toFixed(1)}`,
+    if (hasRealInput) {
+      console.log('🎮 Real Movement:', {
+        direction: `${input.state.right.toFixed(2)}, ${input.state.forward.toFixed(2)}`,
         jump: input.state.jump ? 'YES' : 'no',
         grounded: physics.isGrounded() ? 'YES' : 'no'
       });
