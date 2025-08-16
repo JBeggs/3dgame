@@ -103,8 +103,24 @@ export function connect(): NetAPI {
           store.playersPrev = store.players;
           const m = new Map<number, PlayerSnapshot>();
           
-          console.log(`👥 LIVE: ${(msg.list as PlayerSnapshot[]).length} players in ${store.currentRoom}:`, 
-            (msg.list as PlayerSnapshot[]).map(p => `${p.id}${p.id === store.selfId ? '(me)' : ''}: ${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`));
+          // More detailed debugging of player data
+          console.log(`👥 LIVE: ${(msg.list as PlayerSnapshot[]).length} players in ${store.currentRoom}`);
+          
+          for (const player of msg.list as PlayerSnapshot[]) {
+            const isMe = player.id === store.selfId;
+            const prevPlayer = store.players.get(player.id);
+            const moved = prevPlayer && (
+              Math.abs(player.x - prevPlayer.x) > 0.1 || 
+              Math.abs(player.z - prevPlayer.z) > 0.1
+            );
+            
+            console.log(`  Player ${player.id}${isMe ? ' (me)' : ''}:`, {
+              pos: `${player.x.toFixed(1)}, ${player.y.toFixed(1)}, ${player.z.toFixed(1)}`,
+              rot: player.rotation ? `${(player.rotation * 180 / Math.PI).toFixed(0)}°` : 'none',
+              name: player.name || 'unnamed',
+              moved: moved ? '✅ MOVED' : (prevPlayer ? '❌ STATIC' : '🆕 NEW')
+            });
+          }
           
           for (const p of msg.list as PlayerSnapshot[]) {
             m.set(p.id, p);

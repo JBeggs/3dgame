@@ -63,7 +63,16 @@ function Scene() {
         if (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
         const rotation = prevRot + rotDiff * alpha;
         
-        // Network debugging removed - multiplayer rotation now working
+        // Debug interpolated positions occasionally
+        if (Math.random() < 0.01) {
+          console.log(`🎮 Render Player ${p.id}:`, {
+            current: `${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}`,
+            previous: `${prev.x.toFixed(2)}, ${prev.y.toFixed(2)}, ${prev.z.toFixed(2)}`,
+            interpolated: `${ix.toFixed(2)}, ${iy.toFixed(2)}, ${iz.toFixed(2)}`,
+            alpha: alpha.toFixed(2),
+            dt: dt.toFixed(0)
+          });
+        }
         
         const color = idToColor(p.id);
         
