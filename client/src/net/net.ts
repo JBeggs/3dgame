@@ -3,6 +3,20 @@ import { useSyncExternalStore } from 'react';
 
 type PlayerSnapshot = { id: number; x: number; y: number; z: number; rotation?: number; name?: string };
 
+type ProjectileSnapshot = {
+  id: string;
+  playerId: number;
+  x: number; y: number; z: number;
+  vx: number; vy: number; vz: number;
+  type: 'magic' | 'ricochet' | 'explosive';
+  damage: number;
+  lifetime: number;
+  maxLifetime: number;
+  bounces?: number;
+  explosionRadius?: number;
+  explosionDamage?: number;
+};
+
 type Room = {
   id: string;
   name: string;
@@ -24,6 +38,11 @@ type Store = {
   messages: { from: number; text: string }[];
   rooms: Room[];
   presenceMessages: { type: 'joined' | 'left' | 'renamed'; playerId: number; playerName: string; timestamp: number }[];
+  
+  // Multiplayer projectiles
+  remoteProjectiles: Map<string, ProjectileSnapshot>;
+  remoteProjectilesPrev: Map<string, ProjectileSnapshot>;
+  
   subscribers: Set<() => void>;
 };
 
@@ -39,6 +58,11 @@ const store: Store = {
   messages: [],
   rooms: [],
   presenceMessages: [],
+  
+  // Initialize projectile maps
+  remoteProjectiles: new Map(),
+  remoteProjectilesPrev: new Map(),
+  
   subscribers: new Set(),
 };
 
@@ -49,6 +73,8 @@ function emit() {
 export type NetAPI = {
   sendChat: (text: string) => void;
   sendPosition: (x: number, y: number, z: number, rotation?: number) => void;
+  sendProjectileCreate: (projectile: Omit<ProjectileSnapshot, 'playerId'>) => void;
+  sendProjectileDestroy: (projectileId: string) => void;
   joinRoom: (room: string) => void;
   setPlayerName: (name: string) => void;
   getRooms: () => void;
@@ -222,6 +248,30 @@ export function connect(): NetAPI {
           });
           emit();
           break;
+        case 'projectiles': {
+          // Handle multiplayer projectile updates
+          store.remoteProjectilesPrev = store.remoteProjectiles;
+          const m = new Map<string, ProjectileSnapshot>();
+          
+          if (msg.list && Array.isArray(msg.list)) {
+            for (const proj of msg.list as ProjectileSnapshot[]) {
+              // Don't render our own projectiles (we handle them locally)
+              if (proj.playerId !== store.selfId) {
+                m.set(proj.id, proj);
+              }
+            }
+          }
+          
+          store.remoteProjectiles = m;
+          emit();
+          break;
+        }
+        case 'projectileDestroyed':
+          if (msg.id && store.remoteProjectiles.has(msg.id)) {
+            store.remoteProjectiles.delete(msg.id);
+            emit();
+          }
+          break;
       }
     } catch {}
   });
@@ -256,6 +306,22 @@ const api: NetAPI = {
       }
     }
     ws.send(JSON.stringify(data));
+  },
+  sendProjectileCreate(projectile: Omit<ProjectileSnapshot, 'playerId'>) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    console.log('🚀 Sending projectile create:', projectile.type, projectile.id);
+    ws.send(JSON.stringify({ 
+      t: 'projectileCreate', 
+      projectile 
+    }));
+  },
+  sendProjectileDestroy(projectileId: string) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    console.log('💥 Sending projectile destroy:', projectileId);
+    ws.send(JSON.stringify({ 
+      t: 'projectileDestroy', 
+      id: projectileId 
+    }));
   },
   joinRoom(room: string) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {

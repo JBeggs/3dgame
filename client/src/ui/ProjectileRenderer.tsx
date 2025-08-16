@@ -8,10 +8,12 @@ import { getGrid } from '../game/worldState';
 import { getAudio } from '../game/audio';
 import { getParticleManager } from '../effects/ParticleSystem';
 import { InstancedProjectiles } from './InstancedMeshes';
+import { connect } from '../net/net';
 
 export function ProjectileRenderer() {
   const projectileManager = getProjectileManager();
   const [projectiles, setProjectiles] = React.useState<Projectile[]>([]);
+  const prevProjectileIds = useRef(new Set<string>());
 
   useFrame((_, deltaTime) => {
     // Update projectile manager
@@ -59,7 +61,23 @@ export function ProjectileRenderer() {
       }
     
     // Update React state
-    setProjectiles([...projectileManager.getAllProjectiles()]);
+    const currentProjectiles = [...projectileManager.getAllProjectiles()];
+    setProjectiles(currentProjectiles);
+    
+    // Detect destroyed projectiles for network sync
+    const currentIds = new Set(currentProjectiles.map(p => p.id));
+    const net = connect();
+    
+    // Find projectiles that were removed since last frame
+    for (const prevId of prevProjectileIds.current) {
+      if (!currentIds.has(prevId)) {
+        // This projectile was destroyed, notify network
+        net.sendProjectileDestroy(prevId);
+      }
+    }
+    
+    // Update previous set for next frame
+    prevProjectileIds.current = currentIds;
   });
 
   // Convert projectiles to instanced format

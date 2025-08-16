@@ -7,6 +7,7 @@ console.log(`[ws] listening on :${PORT}`);
 
 const clients = new Map(); // id -> { ws, x,y,z, room, name, joinTime }
 const rooms = new Map(); // room -> { name, playerCount, created, maxPlayers, createdBy }
+const projectiles = new Map(); // projectileId -> { ...projectile data, room }
 let nextId = 1;
 let nextRoomId = 1;
 
@@ -47,13 +48,47 @@ wss.on('connection', (ws) => {
     if (!msg) return;
     if (msg.t === 'chat') {
       broadcast({ t: 'chat', from: id, text: String(msg.text || '') });
-    } else if (msg.t === 'pos') {
-      const c = clients.get(id);
-      if (!c) return;
-      c.x = Number(msg.x)||0; c.y = Number(msg.y)||0; c.z = Number(msg.z)||0;
-      if (msg.rotation !== undefined) {
-        c.rotation = Number(msg.rotation)||0;
-      }
+          } else if (msg.t === 'pos') {
+        const c = clients.get(id);
+        if (!c) return;
+        c.x = Number(msg.x)||0; c.y = Number(msg.y)||0; c.z = Number(msg.z)||0;
+        if (msg.rotation !== undefined) {
+          c.rotation = Number(msg.rotation)||0;
+        }
+      } else if (msg.t === 'projectileCreate') {
+        const c = clients.get(id);
+        if (!c || !msg.projectile) return;
+        
+        const projectile = {
+          ...msg.projectile,
+          playerId: id,
+          room: c.room,
+          createdAt: Date.now()
+        };
+        
+        projectiles.set(msg.projectile.id, projectile);
+        console.log(`[projectile] Player ${id} created ${msg.projectile.type} projectile ${msg.projectile.id}`);
+        
+        // Broadcast to all players in the same room
+        broadcastToRoom(c.room, { 
+          t: 'projectileCreated', 
+          projectile 
+        });
+      } else if (msg.t === 'projectileDestroy') {
+        const c = clients.get(id);
+        if (!c || !msg.id) return;
+        
+        const projectile = projectiles.get(msg.id);
+        if (projectile && projectile.playerId === id) {
+          projectiles.delete(msg.id);
+          console.log(`[projectile] Player ${id} destroyed projectile ${msg.id}`);
+          
+          // Broadcast destruction to all players in the same room
+          broadcastToRoom(c.room, { 
+            t: 'projectileDestroyed', 
+            id: msg.id 
+          });
+        }
     } else if (msg.t === 'join') {
       const c = clients.get(id);
       if (!c) return;
@@ -167,6 +202,15 @@ wss.on('connection', (ws) => {
         console.log(`[room] Deleted room "${room.name}" (${roomId}) - creator left`);
       }
       
+      // Clean up player's projectiles
+      for (const [projId, proj] of projectiles) {
+        if (proj.playerId === id) {
+          projectiles.delete(projId);
+          // Broadcast projectile destruction to room
+          broadcastToRoom(c.room, { t: 'projectileDestroyed', id: projId });
+        }
+      }
+      
       // Update room count and notify others
       updateRoomCount(c.room);
       broadcastToRoom(c.room, { t: 'playerLeft', playerId: id, playerName: c.name });
@@ -178,12 +222,34 @@ wss.on('connection', (ws) => {
 });
 
 setInterval(() => {
-  // broadcast players snapshot per room at 10Hz
+  // broadcast players and projectiles snapshot per room at 10Hz
   for (const [id, c] of clients) {
-    const list = [...clients.entries()]
+    // Player list
+    const playerList = [...clients.entries()]
       .filter(([pid, cc]) => cc.room === c.room)
       .map(([pid, cc]) => ({ id: pid, x: cc.x, y: cc.y, z: cc.z, rotation: cc.rotation }));
-    sendTo(id, { t: 'players', list });
+    sendTo(id, { t: 'players', list: playerList });
+    
+    // Projectile list for the same room
+    const projectileList = [...projectiles.values()]
+      .filter(proj => proj.room === c.room)
+      .map(proj => ({
+        id: proj.id,
+        playerId: proj.playerId,
+        x: proj.x, y: proj.y, z: proj.z,
+        vx: proj.vx, vy: proj.vy, vz: proj.vz,
+        type: proj.type,
+        damage: proj.damage,
+        lifetime: proj.lifetime,
+        maxLifetime: proj.maxLifetime,
+        bounces: proj.bounces,
+        explosionRadius: proj.explosionRadius,
+        explosionDamage: proj.explosionDamage
+      }));
+    
+    if (projectileList.length > 0) {
+      sendTo(id, { t: 'projectiles', list: projectileList });
+    }
   }
 }, 100);
 

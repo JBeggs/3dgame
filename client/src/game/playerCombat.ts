@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { getProjectileManager } from './projectiles';
 import { getPhysics } from './physics';
 import { getAudio } from './audio';
+import { connect } from '../net/net';
 
 export type ProjectileType = 'magic' | 'ricochet' | 'explosive';
 
@@ -91,6 +92,24 @@ class PlayerCombatManager {
       'player', // Player ID to prevent self-damage
       options
     );
+    
+    // Send projectile creation to network for multiplayer sync
+    const net = connect();
+    const direction = targetPos.clone().sub(shootPos).normalize();
+    const velocity = direction.multiplyScalar(speed);
+    
+    net.sendProjectileCreate({
+      id: projectileId,
+      x: shootPos.x, y: shootPos.y, z: shootPos.z,
+      vx: velocity.x, vy: velocity.y, vz: velocity.z,
+      type: this.currentProjectileType,
+      damage: damage,
+      lifetime: 0,
+      maxLifetime: this.currentProjectileType === 'explosive' ? 8 : 5,
+      bounces: this.currentProjectileType === 'ricochet' ? 3 : undefined,
+      explosionRadius: options.explosionRadius,
+      explosionDamage: options.explosionDamage
+    });
     
     this.currentAmmo--;
     this.lastRangedAttackTime = Date.now();

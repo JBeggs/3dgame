@@ -21,6 +21,7 @@ import { Nameplate, idToColor } from './Nameplate';
 import { getPhysics } from '../game/physics';
 import { LobbyPanel } from './LobbyPanel';
 import { AvatarRoot } from '../avatar/Avatar';
+import { RemoteProjectileRenderer } from './RemoteProjectileRenderer';
 
 
 function Scene() {
@@ -101,6 +102,9 @@ function Scene() {
           </group>
         );
       })}
+      {/* Remote projectiles from other players */}
+      <RemoteProjectileRenderer />
+      
       {/* Quick lobby switcher */}
       <group position={[0,2,0]}>
         <Text position={[0,0,0]} fontSize={0.2} color={'#ccc'} anchorX="center">Use 1/2/3 to switch rooms</Text>
