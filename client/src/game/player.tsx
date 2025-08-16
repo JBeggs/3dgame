@@ -40,6 +40,8 @@ export function usePlayerController() {
     // send network position (throttled inside net api)
     net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z);
     // simple reconciliation: if server pos diverges a lot, snap toward it
+    // TEMPORARILY DISABLED - causing respawn loop issue
+    /*
     const sp = netState.selfPos;
     if (sp) {
       const dx = sp.x - playerBody.position.x;
@@ -51,6 +53,7 @@ export function usePlayerController() {
         playerBody.position.z += dz * 0.5;
       }
     }
+    */
   });
 
   return { input, physics, cameraTarget } as const;
