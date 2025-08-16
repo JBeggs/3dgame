@@ -39,7 +39,14 @@ function Scene() {
       </mesh>
       <gridHelper args={[20, 20, '#444', '#333']} />
       {/* Other players with enhanced nameplates */}
-      {Array.from(net.players.values()).filter(p => p.id !== net.selfId).map((p) => {
+      {(() => {
+        const otherPlayers = Array.from(net.players.values()).filter(p => p.id !== net.selfId);
+        // Debug rendering occasionally
+        if (Math.random() < 0.001) {
+          console.log(`🎮 Rendering ${otherPlayers.length} other players`);
+        }
+        return otherPlayers;
+      })().map((p) => {
         const prev = net.playersPrev.get(p.id) || p;
         const dt = Math.max(16, net.tCurr - net.tPrev);
         const alpha = Math.min(1, (performance.now() - net.tCurr) / dt);
@@ -56,15 +63,7 @@ function Scene() {
         if (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
         const rotation = prevRot + rotDiff * alpha;
         
-        // Debug network data for other players (throttled)
-        if (Math.random() < 0.01) { // Only log 1% of frames to reduce spam
-          console.log(`🌐 Player ${p.id} data:`, {
-            position: `${ix.toFixed(1)}, ${iy.toFixed(1)}, ${iz.toFixed(1)}`,
-            hasRotation: p.rotation !== undefined,
-            rotation: p.rotation ? `${(p.rotation * 180 / Math.PI).toFixed(0)}°` : 'MISSING',
-            interpolatedRotation: `${(rotation * 180 / Math.PI).toFixed(0)}°`
-          });
-        }
+        // Network debugging removed - multiplayer rotation now working
         
         const color = idToColor(p.id);
         

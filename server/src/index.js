@@ -27,6 +27,7 @@ wss.on('connection', (ws) => {
     x: 0, 
     y: 0, 
     z: 0, 
+    rotation: 0,
     room: defaultRoom, 
     name: `Player${id}`,
     joinTime: Date.now()
@@ -50,6 +51,9 @@ wss.on('connection', (ws) => {
       const c = clients.get(id);
       if (!c) return;
       c.x = Number(msg.x)||0; c.y = Number(msg.y)||0; c.z = Number(msg.z)||0;
+      if (msg.rotation !== undefined) {
+        c.rotation = Number(msg.rotation)||0;
+      }
     } else if (msg.t === 'join') {
       const c = clients.get(id);
       if (!c) return;
@@ -178,7 +182,7 @@ setInterval(() => {
   for (const [id, c] of clients) {
     const list = [...clients.entries()]
       .filter(([pid, cc]) => cc.room === c.room)
-      .map(([pid, cc]) => ({ id: pid, x: cc.x, y: cc.y, z: cc.z }));
+      .map(([pid, cc]) => ({ id: pid, x: cc.x, y: cc.y, z: cc.z, rotation: cc.rotation }));
     sendTo(id, { t: 'players', list });
   }
 }, 100);
@@ -201,7 +205,7 @@ function sendPlayersFor(id) {
   if (!c) return;
   const list = [...clients.entries()]
     .filter(([pid, cc]) => cc.room === c.room)
-    .map(([pid, cc]) => ({ id: pid, x: cc.x, y: cc.y, z: cc.z, name: cc.name }));
+    .map(([pid, cc]) => ({ id: pid, x: cc.x, y: cc.y, z: cc.z, rotation: cc.rotation, name: cc.name }));
   sendTo(id, { t: 'players', list });
 }
 

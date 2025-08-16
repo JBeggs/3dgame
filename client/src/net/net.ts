@@ -65,9 +65,19 @@ export function connect(): NetAPI {
     return api;
   }
   const url = (import.meta.env.VITE_WS_URL as string) || `ws://${location.hostname}:8080`;
+  console.log('🔌 Connecting to WebSocket:', url);
   ws = new WebSocket(url);
   ws.addEventListener('open', () => {
+    console.log('✅ WebSocket connected successfully');
     store.connected = true;
+    emit();
+  });
+  ws.addEventListener('error', (error) => {
+    console.error('❌ WebSocket error:', error);
+  });
+  ws.addEventListener('close', (event) => {
+    console.log('🔌 WebSocket closed:', { code: event.code, reason: event.reason });
+    store.connected = false;
     emit();
   });
   ws.addEventListener('message', (ev) => {
@@ -75,6 +85,7 @@ export function connect(): NetAPI {
       const msg = JSON.parse(String(ev.data));
       switch (msg.t) {
         case 'welcome':
+          console.log('🎉 Welcome message - assigned player ID:', msg.id);
           store.selfId = msg.id;
           emit();
           break;
@@ -91,17 +102,16 @@ export function connect(): NetAPI {
           store.tCurr = now;
           store.playersPrev = store.players;
           const m = new Map<number, PlayerSnapshot>();
+          
+          // Debug occasionally
+          if (Math.random() < 0.01) {
+            console.log(`👥 Players update - Total: ${(msg.list as PlayerSnapshot[]).length}, Room: ${store.currentRoom}`);
+          }
+          
           for (const p of msg.list as PlayerSnapshot[]) {
             m.set(p.id, p);
-            // Debug received player data (throttled)
-            if (Math.random() < 0.1 && p.id !== store.selfId) { // 10% chance, exclude self
-              console.log(`📥 Received player ${p.id} data:`, {
-                position: `${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}`,
-                hasRotation: p.rotation !== undefined,
-                rotation: p.rotation ? `${(p.rotation * 180 / Math.PI).toFixed(0)}°` : 'MISSING'
-              });
-            }
           }
+          
           if (store.selfId != null) {
             const me = (msg.list as PlayerSnapshot[]).find(p => p.id === store.selfId);
             if (me) store.selfPos = { x: me.x, y: me.y, z: me.z };
@@ -223,7 +233,11 @@ const api: NetAPI = {
     ws.send(JSON.stringify(data));
   },
   joinRoom(room: string) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.error('❌ Cannot join room - WebSocket not connected');
+      return;
+    }
+    console.log('🚪 Joining room:', room);
     store.currentRoom = room;
     ws.send(JSON.stringify({ t: 'join', room }));
     emit();
