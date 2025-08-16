@@ -19,15 +19,7 @@ export function PlayerMesh() {
     console.log('🔗 Attaching input system...');
     input.attach();
     
-    // Test if input system is working
-    setTimeout(() => {
-      console.log('🧪 Input test after 2s:', {
-        right: input.state.right,
-        forward: input.state.forward,
-        jump: input.state.jump,
-        action: input.state.action
-      });
-    }, 2000);
+    // Input system is working properly now
     
     return () => {
       console.log('🔌 Detaching input system...');
@@ -53,19 +45,19 @@ export function PlayerMesh() {
     const threshold = 0.01; // Ignore tiny gamepad/touch drift
     const hasRealInput = Math.abs(input.state.right) > threshold || Math.abs(input.state.forward) > threshold || input.state.jump;
     
-    // DEBUG: Show what's happening with thresholds
-    if (Math.abs(input.state.right) > 1e-10 || Math.abs(input.state.forward) > 1e-10) {
-      console.log('🔧 Input drift detected:', {
-        right: input.state.right,
-        forward: input.state.forward,
-        rightAbs: Math.abs(input.state.right),
-        forwardAbs: Math.abs(input.state.forward),
-        aboveThreshold: hasRealInput
+    // DEBUG: Only show significant input changes (not smoothing decay)
+    const significantInput = Math.abs(input.state.right) > 0.1 || Math.abs(input.state.forward) > 0.1;
+    if (significantInput && Math.random() < 0.1) {
+      console.log('🔧 Input active:', {
+        right: input.state.right.toFixed(2),
+        forward: input.state.forward.toFixed(2),
+        hasRealInput: hasRealInput
       });
     }
     
-    if (hasRealInput) {
-      console.log('🎮 Real Movement:', {
+    // Reduced movement logging - only occasional updates
+    if (hasRealInput && Math.random() < 0.02) {
+      console.log('🎮 Movement working:', {
         direction: `${input.state.right.toFixed(2)}, ${input.state.forward.toFixed(2)}`,
         jump: input.state.jump ? 'YES' : 'no',
         grounded: physics.isGrounded() ? 'YES' : 'no'
