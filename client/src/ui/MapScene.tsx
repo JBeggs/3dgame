@@ -4,6 +4,7 @@ import { getPhysics } from '../game/physics';
 import { Spider } from '../ai/spider';
 import { inventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
+import { setGrid } from '../game/worldState';
 
 export function MapScene() {
   const grid = useMemo(() => generateDungeon(1, 48, 36, 10), []);
@@ -20,6 +21,7 @@ export function MapScene() {
   const [collected, setCollected] = useState<Set<number>>(new Set());
 
   useEffect(() => {
+    setGrid(grid);
     const phys = getPhysics();
     // build static walls in physics
     for (let y = 0; y < grid.h; y++) {

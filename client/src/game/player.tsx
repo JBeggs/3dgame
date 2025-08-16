@@ -5,6 +5,7 @@ import { getInput } from './input';
 import { getPhysics } from './physics';
 import { connect } from '../net/net';
 import { AvatarRoot } from '../avatar/Avatar';
+import { setPlayerPos } from './worldState';
 
 export function usePlayerController() {
   const input = useMemo(() => getInput(), []);
@@ -49,6 +50,7 @@ export function PlayerMesh() {
   useFrame(() => {
     const p = physics.playerBody.position;
     ref.current.position.set(p.x, p.y, p.z);
+    setPlayerPos(p.x, p.z);
     // simple chase cam
     const camOffset = new THREE.Vector3(4, 3, 6);
     camera.position.lerp(new THREE.Vector3(p.x, p.y, p.z).add(camOffset), 0.1);
