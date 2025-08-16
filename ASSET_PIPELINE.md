@@ -18,8 +18,8 @@ Next additions (when assets land)
 - Vite plugin to prefer `.ktx2` when available.
 
 Open for development (TODO)
-- [ ] Add `tools/glb-compress.mjs` using `gltf-transform` (prune, dedup, draco, meshopt)
-- [ ] Add `tools/ktx2-textures.sh` wrapper around `toktx` for batch texture conversion
+- [x] Add `tools/glb-compress.mjs` using `gltf-transform` (draco, meshopt). Usage: `node tools/glb-compress.mjs <inDir> <outDir>`
+- [x] Add `tools/ktx2-textures.sh` wrapper around `toktx` for batch texture conversion. Usage: `bash tools/ktx2-textures.sh <inDir> <outDir>`
 - [ ] Wire CI job to run size report and fail if over budget
 
 
