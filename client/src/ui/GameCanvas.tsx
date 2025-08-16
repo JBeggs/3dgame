@@ -17,9 +17,13 @@ import { MapControlsPanel } from './MapControlsPanel';
 import { GamepadControls } from './GamepadControls';
 import { avatarStore } from '../avatar/store';
 import { useEffect } from 'react';
+import { Nameplate, idToColor } from './Nameplate';
+import { getPhysics } from '../game/physics';
 
 function Scene() {
   const net = useNet();
+  const physics = getPhysics();
+  
   return (
     <>
       <ambientLight intensity={0.6} />
@@ -31,8 +35,8 @@ function Scene() {
         <meshStandardMaterial color="#2a2f39" />
       </mesh>
       <gridHelper args={[20, 20, '#444', '#333']} />
-      {/* Other players with nameplates */}
-      {Array.from(net.players.values()).map((p) => {
+      {/* Other players with enhanced nameplates */}
+      {Array.from(net.players.values()).filter(p => p.id !== net.selfId).map((p) => {
         const prev = net.playersPrev.get(p.id) || p;
         const dt = Math.max(16, net.tCurr - net.tPrev);
         const alpha = Math.min(1, (performance.now() - net.tCurr) / dt);
@@ -40,15 +44,29 @@ function Scene() {
         const iy = prev.y + (p.y - prev.y) * alpha;
         const iz = prev.z + (p.z - prev.z) * alpha;
         const color = idToColor(p.id);
+        
+        // Calculate distance from local player
+        const playerPos = physics.playerBody.position;
+        const distance = Math.sqrt(
+          Math.pow(ix - playerPos.x, 2) + 
+          Math.pow(iz - playerPos.z, 2)
+        );
+        
         return (
           <group key={p.id} position={[ix, iy, iz]}>
+            {/* Player avatar/mesh */}
             <mesh>
               <sphereGeometry args={[0.25, 12, 12]} />
               <meshStandardMaterial color={color} />
             </mesh>
-            <Text position={[0, 0.6, 0]} fontSize={0.25} color={color} anchorX="center" anchorY="middle">
-              {`P${p.id}`}
-            </Text>
+            
+            {/* Enhanced nameplate */}
+            <Nameplate 
+              playerId={p.id}
+              position={[0, 0, 0]}
+              color={color}
+              distance={distance}
+            />
           </group>
         );
       })}
@@ -60,10 +78,7 @@ function Scene() {
   );
 }
 
-function idToColor(id: number): string {
-  const hue = (id * 47) % 360;
-  return `hsl(${hue} 80% 60%)`;
-}
+
 
 export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: boolean }) {
   const inv = useInventory();

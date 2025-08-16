@@ -24,13 +24,31 @@ Next extensions
 - Replace spheres with avatar instances and nameplates.
 
 Open for development (TODO)
-- [ ] Add nameplates over remote players and colorize by id
+- [x] Add nameplates over remote players and colorize by id
 - [x] Implement simple client prediction (velocity-based) with periodic reconciliation
 - [ ] Add lobby/join flow and per-room presence
+
+Nameplate System Enhancements (v2)
+- **Enhanced Nameplates**: Created dedicated `Nameplate` component with camera-facing behavior
+- **Distance-Based Scaling**: Nameplates scale and fade based on distance from local player
+- **Improved Color System**: 20 predefined colors for better visual distribution
+- **Background Plates**: Semi-transparent backgrounds for better text readability
+- **Status Indicators**: Green dot showing online/active status
+- **Distance Display**: Shows distance in meters for far players (>8m)
+- **Performance Optimized**: Proper depth handling and transparency settings
+
+Features:
+- **Camera Billboard**: Nameplates always face the camera for optimal readability
+- **Adaptive Opacity**: Fades out distant players while maintaining visibility
+- **Smart Scaling**: Reduces size at distance to prevent screen clutter
+- **Color Consistency**: Each player ID maps to a consistent, vibrant color
+- **Status Awareness**: Visual indicators for player state/activity
 
 Files
 - `server/src/index.js`
 - `client/src/net/net.ts`
+- `client/src/ui/Nameplate.tsx`
+- `client/src/ui/GameCanvas.tsx`
 
 
 
