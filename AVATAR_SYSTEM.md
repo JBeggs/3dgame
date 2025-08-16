@@ -6,7 +6,7 @@ Scope implemented in this pass
 
 Next
 - Swap body/head/outfit presets and lazy-load glTF assets. Loader added with `/assets/avatar/{id}.glb` lookup and primitive fallback. If the GLB contains animation clips named `Idle` and `Run/Walk`, they will auto‑blend based on movement speed.
-- Expose `setAvatar(config)` API for host app integration.
+- Host API: window.gameApi.setAvatar(config) updates the avatar at runtime.
 
 Steps
 1. Data schema: `{ bodyId, headId, outfitId, colors: { primary, secondary } }`.
@@ -19,6 +19,7 @@ Files
 
 Usage
 - Place optional GLB files at `/web/assets/avatar/{bodyId|headId|outfitId}.glb`. If absent, the placeholder primitives render instead.
+ - From host/webview you can call: `window.gameApi.setAvatar({ bodyId: 'bodyB', colors: { primary: '#ffcc00' } })`.
 
 Notes
 - Asset compression and real meshes come next; for now, this is the UI/system scaffold.

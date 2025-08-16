@@ -14,6 +14,8 @@ import { useInventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
 import { MiniMap } from './MiniMap';
 import { MapControlsPanel } from './MapControlsPanel';
+import { avatarStore } from '../avatar/store';
+import { useEffect } from 'react';
 
 function Scene() {
   const net = useNet();
@@ -42,6 +44,12 @@ function Scene() {
 export function GameCanvas() {
   const inv = useInventory();
   const won = inv.items.coin >= getCoinTarget();
+  useEffect(() => {
+    (window as any).gameApi = {
+      setAvatar: (cfg: any) => avatarStore.set(cfg || {}),
+    };
+    return () => { try { delete (window as any).gameApi; } catch {} };
+  }, []);
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas shadows camera={{ position: [4, 3, 6], fov: 60 }}>
