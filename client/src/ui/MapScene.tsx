@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { generateBSP } from '../gen/mapGen';
 import { getPhysics } from '../game/physics';
+import { Spider } from '../ai/spider';
 
 export function MapScene() {
   const grid = useMemo(() => generateBSP(1, 36, 36), []);
@@ -32,7 +33,10 @@ export function MapScene() {
       }
     }
   }
-  return <>{meshes}</>;
+  return <>
+    {meshes}
+    <Spider />
+  </>;
 }
 
 
