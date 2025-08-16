@@ -16,10 +16,13 @@ export function AvatarRoot({
   const cfg = useAvatar();
   const primary = new THREE.Color(cfg.colors.primary);
   const secondary = new THREE.Color(cfg.colors.secondary);
+  const accent = new THREE.Color(cfg.colors.accent);
+  const accessoryColor = new THREE.Color(cfg.colors.accessory);
   const groupRef = useRef<THREE.Group>(null!);
   const [loadedBody, setLoadedBody] = useState<THREE.Object3D | null>(null);
   const [loadedHead, setLoadedHead] = useState<THREE.Object3D | null>(null);
   const [loadedOutfit, setLoadedOutfit] = useState<THREE.Object3D | null>(null);
+  const [loadedAccessories, setLoadedAccessories] = useState<Record<string, THREE.Object3D | null>>({});
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
   const actionsRef = useRef<{ 
     idle?: THREE.AnimationAction; 
@@ -35,6 +38,24 @@ export function AvatarRoot({
   useEffect(() => { loadGLTFPart(cfg.bodyId).then(setLoadedBody); }, [cfg.bodyId]);
   useEffect(() => { loadGLTFPart(cfg.headId).then(setLoadedHead); }, [cfg.headId]);
   useEffect(() => { loadGLTFPart(cfg.outfitId).then(setLoadedOutfit); }, [cfg.outfitId]);
+
+  // Load accessories
+  useEffect(() => {
+    const loadAccessories = async () => {
+      const loaded: Record<string, THREE.Object3D | null> = {};
+      for (const [slot, id] of Object.entries(cfg.accessories)) {
+        if (id) {
+          try {
+            loaded[slot] = await loadGLTFPart(id);
+          } catch {
+            loaded[slot] = null;
+          }
+        }
+      }
+      setLoadedAccessories(loaded);
+    };
+    loadAccessories();
+  }, [cfg.accessories]);
 
   // If the body GLTF has animations, set up a mixer and find all animation clips
   useEffect(() => {
@@ -233,18 +254,63 @@ export function AvatarRoot({
           <meshStandardMaterial color={secondary} />
         </mesh>
       )}
-      {/* Accessory slot: simple hat/cape placeholders */}
-      {cfg.accessoryId === 'hatA' && (
-        <mesh position={[0, 1.2, 0]} castShadow>
-          <coneGeometry args={[0.2, 0.3, 8]} />
-          <meshStandardMaterial color={secondary} />
-        </mesh>
+      {/* Accessories */}
+      {/* Hat */}
+      {cfg.accessories.hat && (
+        loadedAccessories.hat ? (
+          <primitive object={loadedAccessories.hat.clone()} position={[0, 1.2, 0]} />
+        ) : (
+          <mesh position={[0, 1.2, 0]} castShadow>
+            <coneGeometry args={[0.2, 0.3, 8]} />
+            <meshStandardMaterial color={accessoryColor} />
+          </mesh>
+        )
       )}
-      {cfg.accessoryId === 'capeA' && (
-        <mesh position={[0, 0.7, -0.15]} rotation={[0,0,0]} castShadow>
-          <planeGeometry args={[0.4, 0.6]} />
-          <meshStandardMaterial color={primary} side={THREE.DoubleSide} />
-        </mesh>
+      
+      {/* Cape */}
+      {cfg.accessories.cape && (
+        loadedAccessories.cape ? (
+          <primitive object={loadedAccessories.cape.clone()} position={[0, 0.7, -0.15]} />
+        ) : (
+          <mesh position={[0, 0.7, -0.15]} rotation={[0,0,0]} castShadow>
+            <planeGeometry args={[0.4, 0.6]} />
+            <meshStandardMaterial color={accessoryColor} side={THREE.DoubleSide} />
+          </mesh>
+        )
+      )}
+      
+      {/* Glasses */}
+      {cfg.accessories.glasses && (
+        loadedAccessories.glasses ? (
+          <primitive object={loadedAccessories.glasses.clone()} position={[0, 0.9, 0.2]} />
+        ) : (
+          <group position={[0, 0.9, 0.2]}>
+            <mesh position={[-0.1, 0, 0]} castShadow>
+              <torusGeometry args={[0.08, 0.02, 8, 16]} />
+              <meshStandardMaterial color={accent} />
+            </mesh>
+            <mesh position={[0.1, 0, 0]} castShadow>
+              <torusGeometry args={[0.08, 0.02, 8, 16]} />
+              <meshStandardMaterial color={accent} />
+            </mesh>
+            <mesh position={[0, 0, -0.05]} rotation={[0, 0, Math.PI / 2]} castShadow>
+              <cylinderGeometry args={[0.01, 0.01, 0.15, 8]} />
+              <meshStandardMaterial color={accent} />
+            </mesh>
+          </group>
+        )
+      )}
+      
+      {/* Necklace */}
+      {cfg.accessories.necklace && (
+        loadedAccessories.necklace ? (
+          <primitive object={loadedAccessories.necklace.clone()} position={[0, 0.6, 0]} />
+        ) : (
+          <mesh position={[0, 0.6, 0]} castShadow>
+            <torusGeometry args={[0.15, 0.02, 8, 16]} />
+            <meshStandardMaterial color={accessoryColor} />
+          </mesh>
+        )
       )}
     </group>
   );

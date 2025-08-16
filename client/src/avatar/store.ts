@@ -1,19 +1,36 @@
 import { useSyncExternalStore } from 'react';
 
+export type AccessorySlot = 'hat' | 'cape' | 'glasses' | 'necklace';
+
 export type AvatarConfig = {
   bodyId: string;
   headId: string;
   outfitId: string;
-  colors: { primary: string; secondary: string };
-  accessoryId?: 'none' | 'hatA' | 'capeA';
+  colors: { 
+    primary: string; 
+    secondary: string; 
+    accent: string;
+    accessory: string;
+  };
+  accessories: {
+    hat?: string;
+    cape?: string;
+    glasses?: string;
+    necklace?: string;
+  };
 };
 
 const DEFAULT: AvatarConfig = {
   bodyId: 'bodyA',
   headId: 'headA',
   outfitId: 'robeA',
-  colors: { primary: '#a0c8ff', secondary: '#4a3070' },
-  accessoryId: 'none',
+  colors: { 
+    primary: '#a0c8ff', 
+    secondary: '#4a3070', 
+    accent: '#ff6b6b',
+    accessory: '#ffd93d'
+  },
+  accessories: {},
 };
 
 const KEY = 'avatarConfigV1';
@@ -26,7 +43,12 @@ function load(): AvatarConfig {
     const raw = localStorage.getItem(KEY);
     if (!raw) return DEFAULT;
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT, ...parsed, colors: { ...DEFAULT.colors, ...(parsed.colors || {}) } };
+    return { 
+      ...DEFAULT, 
+      ...parsed, 
+      colors: { ...DEFAULT.colors, ...(parsed.colors || {}) },
+      accessories: { ...DEFAULT.accessories, ...(parsed.accessories || {}) }
+    };
   } catch {
     return DEFAULT;
   }
@@ -38,13 +60,39 @@ function save(cfg: AvatarConfig) {
 export const avatarStore = {
   get() { return state.cfg; },
   set(partial: Partial<AvatarConfig>) {
-    state.cfg = { ...state.cfg, ...partial, colors: { ...state.cfg.colors, ...(partial.colors || {}) } };
+    state.cfg = { 
+      ...state.cfg, 
+      ...partial, 
+      colors: { ...state.cfg.colors, ...(partial.colors || {}) },
+      accessories: { ...state.cfg.accessories, ...(partial.accessories || {}) }
+    };
     save(state.cfg);
     subs.forEach((f) => f());
   },
+  setAccessory(slot: AccessorySlot, id: string | undefined) {
+    const accessories = { ...state.cfg.accessories };
+    if (id) {
+      accessories[slot] = id;
+    } else {
+      delete accessories[slot];
+    }
+    this.set({ accessories });
+  },
   presets: {
-    presetA: { bodyId: 'bodyA', headId: 'headA', outfitId: 'robeA', colors: { primary: '#a0c8ff', secondary: '#4a3070' }, accessoryId: 'none' } as AvatarConfig,
-    presetB: { bodyId: 'bodyB', headId: 'headB', outfitId: 'robeB', colors: { primary: '#ffd54a', secondary: '#332255' }, accessoryId: 'hatA' } as AvatarConfig,
+    presetA: { 
+      bodyId: 'bodyA', 
+      headId: 'headA', 
+      outfitId: 'robeA', 
+      colors: { primary: '#a0c8ff', secondary: '#4a3070', accent: '#ff6b6b', accessory: '#ffd93d' },
+      accessories: {}
+    } as AvatarConfig,
+    presetB: { 
+      bodyId: 'bodyB', 
+      headId: 'headB', 
+      outfitId: 'robeB', 
+      colors: { primary: '#ffd54a', secondary: '#332255', accent: '#ff4757', accessory: '#2ed573' },
+      accessories: { hat: 'wizardHat', cape: 'magicCape' }
+    } as AvatarConfig,
   },
 };
 

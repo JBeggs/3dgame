@@ -31,7 +31,7 @@ Checklist to verify
 Open for development (TODO)
 - [x] Provide presets (A/B) wired to landing screen; GLBs can be dropped into assets/avatar
 - [x] Add jump/land animation hooks and crossfade tuning
-- [ ] Accessory slots (hat/cape) with color tints
+- [x] Accessory slots (hat/cape/glasses/necklace) with color tints
 
 Animation System Enhancements (v2)
 - **Jump/Land Animation State Machine**: Added 5-state animation system (idle, running, jumping, falling, landing)
@@ -47,9 +47,30 @@ Animation Clip Naming Convention:
 - `Fall` or `fall` - looped falling animation
 - `Land` or `land` - one-shot landing animation
 
+Accessory System Enhancements (v3)
+- **Multi-Slot Accessories**: Added 4 accessory slots (hat, cape, glasses, necklace)
+- **Color Tinting**: Added accent and accessory color channels for customization
+- **GLB Support**: Each accessory can load from `/assets/avatar/{id}.glb` with fallback primitives
+- **Smart UI**: Enhanced AvatarPanel with organized sections and scrollable layout
+- **Preset System**: Updated presets to include accessory configurations
+
+Accessory Slot Details:
+- **Hat**: Positioned above head, supports wizard hats, caps, crowns
+- **Cape**: Positioned behind avatar, supports various cape styles
+- **Glasses**: Positioned on face, includes sunglasses, reading glasses, magic specs
+- **Necklace**: Positioned around neck, includes chains, amulets, pearls
+
+Color System:
+- **Primary**: Main body/outfit color
+- **Secondary**: Head/accent details color  
+- **Accent**: Glasses and detail elements color
+- **Accessory**: Hat, cape, necklace tint color
+
 Notes
 - Asset compression and real meshes come next; for now, this is the UI/system scaffold.
 - Animation state machine automatically handles transitions based on physics state
 - Landing animation plays for 0.3 seconds after touching ground
+- Accessories gracefully fall back to primitive shapes if GLB files are missing
+- All accessories support real-time color tinting via material properties
 
 
