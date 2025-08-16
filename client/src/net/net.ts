@@ -7,7 +7,9 @@ type Room = {
   id: string;
   name: string;
   playerCount: number;
+  maxPlayers: number;
   created: number;
+  createdBy: string;
 };
 
 type Store = {
@@ -50,6 +52,7 @@ export type NetAPI = {
   joinRoom: (room: string) => void;
   setPlayerName: (name: string) => void;
   getRooms: () => void;
+  createRoom: (name: string) => void;
   getState: () => Readonly<Store>;
 };
 
@@ -137,6 +140,42 @@ export function connect(): NetAPI {
           }
           emit();
           break;
+        case 'createSuccess':
+          store.currentRoom = msg.roomId;
+          // Show success message
+          store.presenceMessages.push({
+            type: 'joined',
+            playerId: store.selfId || 0,
+            playerName: `Created room "${msg.roomName}"`,
+            timestamp: Date.now()
+          });
+          emit();
+          break;
+        case 'createError':
+        case 'joinError':
+          // Show error message
+          store.presenceMessages.push({
+            type: 'left',
+            playerId: 0,
+            playerName: `Error: ${msg.error}`,
+            timestamp: Date.now()
+          });
+          emit();
+          break;
+        case 'joinSuccess':
+          store.currentRoom = msg.room;
+          emit();
+          break;
+        case 'roomClosed':
+          store.currentRoom = 'lobby';
+          store.presenceMessages.push({
+            type: 'left',
+            playerId: 0,
+            playerName: msg.message || 'Room was closed',
+            timestamp: Date.now()
+          });
+          emit();
+          break;
       }
     } catch {}
   });
@@ -174,6 +213,10 @@ const api: NetAPI = {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ t: 'getRooms' }));
   },
+  createRoom(name: string) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ t: 'createRoom', name }));
+  },
   getState() {
     // Return the single store reference so useSyncExternalStore can compare by reference
     return store;
@@ -196,6 +239,7 @@ export function useNet() {
     joinRoom: netApi.joinRoom,
     setPlayerName: netApi.setPlayerName,
     getRooms: netApi.getRooms,
+    createRoom: netApi.createRoom,
   };
 }
 

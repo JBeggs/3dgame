@@ -1,8 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNet } from '../net/net';
 
 export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) {
   const net = useNet();
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
 
   useEffect(() => {
     // Request room list when component mounts
@@ -14,38 +16,35 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
     onContinue();
   };
 
-  const getRoomDescription = (roomId: string) => {
+  const handleCreateRoom = () => {
+    if (newRoomName.trim().length >= 3) {
+      net.createRoom(newRoomName.trim());
+      setNewRoomName('');
+      setShowCreateRoom(false);
+      onContinue();
+    }
+  };
+
+  const getRoomDescription = (roomId: string, maxPlayers: number) => {
     switch (roomId) {
       case 'lobby':
         return 'A safe starting area to meet other players and practice controls';
-      case 'dungeon1':
-        return 'Beginner-friendly dungeon with basic enemies and treasures';
-      case 'dungeon2':
-        return 'Intermediate dungeon with more challenging creatures';
-      case 'arena':
-        return 'Player vs Player combat arena for competitive gameplay';
       default:
-        return 'Custom room for specialized gameplay';
+        return `Private adventure room (max ${maxPlayers} players)`;
     }
   };
 
   const getRoomIcon = (roomId: string) => {
     switch (roomId) {
       case 'lobby': return '🏠';
-      case 'dungeon1': return '⚔️';
-      case 'dungeon2': return '🏰';
-      case 'arena': return '🏟️';
-      default: return '🌍';
+      default: return '🎮';
     }
   };
 
-  const getRoomDifficulty = (roomId: string) => {
+  const getRoomDifficulty = (roomId: string, maxPlayers: number) => {
     switch (roomId) {
-      case 'lobby': return { level: 'Safe', color: '#4ade80' };
-      case 'dungeon1': return { level: 'Easy', color: '#22c55e' };
-      case 'dungeon2': return { level: 'Medium', color: '#f59e0b' };
-      case 'arena': return { level: 'PvP', color: '#ef4444' };
-      default: return { level: 'Custom', color: '#8b5cf6' };
+      case 'lobby': return { level: 'Lobby', color: '#4ade80' };
+      default: return { level: `${maxPlayers}P`, color: '#8b5cf6' };
     }
   };
 
@@ -116,6 +115,114 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
           </span>
         </div>
 
+        {/* Create Room Button */}
+        <div style={{ marginBottom: 24 }}>
+          {!showCreateRoom ? (
+            <button
+              onClick={() => setShowCreateRoom(true)}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 12,
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                transition: 'all 0.2s ease',
+                marginBottom: 16
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #059669, #047857)';
+                e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+              }}
+            >
+              ➕ Create New Room (Max 4 Players)
+            </button>
+          ) : (
+            <div style={{
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: 12,
+              padding: 16,
+              marginBottom: 16
+            }}>
+              <div style={{ marginBottom: 12, fontSize: '1rem', fontWeight: 'bold', color: '#10b981' }}>
+                🎮 Create Your Adventure Room
+              </div>
+              <input
+                type="text"
+                value={newRoomName}
+                onChange={(e) => setNewRoomName(e.target.value)}
+                placeholder="Enter room name (3-30 characters)"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 8,
+                  color: '#fff',
+                  fontSize: '1rem',
+                  marginBottom: 12,
+                  boxSizing: 'border-box'
+                }}
+                maxLength={30}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateRoom();
+                  }
+                }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={handleCreateRoom}
+                  disabled={newRoomName.trim().length < 3}
+                  style={{
+                    flex: 1,
+                    padding: '10px 16px',
+                    background: newRoomName.trim().length >= 3 
+                      ? 'linear-gradient(135deg, #10b981, #059669)' 
+                      : 'rgba(107, 114, 128, 0.5)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    cursor: newRoomName.trim().length >= 3 ? 'pointer' : 'not-allowed',
+                    fontSize: '0.9rem',
+                    fontWeight: '600'
+                  }}
+                >
+                  Create Room
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCreateRoom(false);
+                    setNewRoomName('');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '10px 16px',
+                    background: 'rgba(239, 68, 68, 0.2)',
+                    color: '#f87171',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: '600'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Room List */}
         <div style={{ marginBottom: 24 }}>
           {net.rooms.length === 0 ? (
@@ -131,22 +238,24 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
           ) : (
             <div style={{ display: 'grid', gap: 16 }}>
               {net.rooms.map((room) => {
-                const difficulty = getRoomDifficulty(room.id);
+                const difficulty = getRoomDifficulty(room.id, room.maxPlayers);
+                const isRoomFull = room.maxPlayers > 0 && room.playerCount >= room.maxPlayers;
                 return (
                   <div
                     key={room.id}
-                    onClick={() => handleJoinRoom(room.id)}
+                    onClick={() => !isRoomFull && handleJoinRoom(room.id)}
                     style={{
                       display: 'flex',
                       alignItems: window.innerWidth < 768 ? 'flex-start' : 'center',
                       flexDirection: window.innerWidth < 480 ? 'column' : 'row',
                       padding: window.innerWidth < 768 ? 16 : 20,
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      background: isRoomFull ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${isRoomFull ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255,255,255,0.1)'}`,
                       borderRadius: 12,
-                      cursor: 'pointer',
+                      cursor: isRoomFull ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s ease',
-                      transform: 'translateY(0)'
+                      transform: 'translateY(0)',
+                      opacity: isRoomFull ? 0.7 : 1
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
@@ -206,7 +315,7 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
                         margin: '4px 0 8px 0',
                         lineHeight: 1.4
                       }}>
-                        {getRoomDescription(room.id)}
+                        {getRoomDescription(room.id, room.maxPlayers)}
                       </p>
                       
                       <div style={{ 
@@ -217,8 +326,11 @@ export function RoomSelectionScreen({ onContinue }: { onContinue: () => void }) 
                         flexWrap: 'wrap',
                         gap: window.innerWidth < 768 ? 8 : 16
                       }}>
-                        <span>
-                          👥 {room.playerCount} player{room.playerCount !== 1 ? 's' : ''} online
+                        <span style={{ 
+                          color: isRoomFull ? '#f87171' : '#64748b'
+                        }}>
+                          👥 {room.playerCount}{room.maxPlayers > 0 ? `/${room.maxPlayers}` : ''} player{room.playerCount !== 1 ? 's' : ''}
+                          {isRoomFull && ' (FULL)'}
                         </span>
                         <span>
                           🕒 Created {new Date(room.created).toLocaleDateString()}
