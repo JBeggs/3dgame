@@ -1,17 +1,14 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, StatsGl } from '@react-three/drei';
+import { PlayerMesh } from '../game/player';
 
 function Scene() {
   return (
     <>
       <ambientLight intensity={0.6} />
       <directionalLight position={[3, 5, 2]} intensity={1.0} />
-      <mesh castShadow receiveShadow position={[0, 0.5, 0]}
-        onPointerDown={(e) => console.log('mesh click', e.point)}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#4aa3ff" />
-      </mesh>
+      <PlayerMesh />
       <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[20, 20]} />
         <meshStandardMaterial color="#2a2f39" />
