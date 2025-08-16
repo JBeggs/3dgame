@@ -17,26 +17,30 @@ export function TouchControls() {
     function onTouchStart(e: TouchEvent) { const t = e.touches[0]; compute(t.clientX, t.clientY); }
     function onTouchMove(e: TouchEvent) { const t = e.touches[0]; compute(t.clientX, t.clientY); }
     function onTouchEnd() { input.setVector(0, 0); }
-    function onPointerDown(e: PointerEvent) { if (e.pointerType === 'mouse') compute(e.clientX, e.clientY); }
-    function onPointerMove(e: PointerEvent) { if (e.pointerType === 'mouse' && e.buttons) compute(e.clientX, e.clientY); }
+    // Mouse/trackpad: treat hover inside pad as active joystick
+    function onMouseEnter(e: MouseEvent) { compute(e.clientX, e.clientY); }
+    function onMouseMove(e: MouseEvent) { compute(e.clientX, e.clientY); }
+    function onMouseLeave() { input.setVector(0, 0); }
     function onPointerUp() { input.setVector(0, 0); }
     el.addEventListener('touchstart', onTouchStart);
     el.addEventListener('touchmove', onTouchMove);
     el.addEventListener('touchend', onTouchEnd);
-    el.addEventListener('pointerdown', onPointerDown);
-    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('mouseenter', onMouseEnter);
+    el.addEventListener('mousemove', onMouseMove);
+    el.addEventListener('mouseleave', onMouseLeave);
     el.addEventListener('pointerup', onPointerUp);
     return () => {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
-      el.removeEventListener('pointerdown', onPointerDown);
-      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('mouseenter', onMouseEnter);
+      el.removeEventListener('mousemove', onMouseMove);
+      el.removeEventListener('mouseleave', onMouseLeave);
       el.removeEventListener('pointerup', onPointerUp);
     };
   }, []);
   return (
-    <div ref={padRef} style={{ position: 'absolute', left: 12, bottom: 12, width: 140, height: 140, borderRadius: 70, background: 'rgba(255,255,255,0.06)', touchAction: 'none', userSelect: 'none' }} />
+    <div ref={padRef} style={{ position: 'absolute', left: 12, bottom: 12, width: 140, height: 140, borderRadius: 70, background: 'rgba(255,255,255,0.06)', touchAction: 'none', userSelect: 'none', cursor: 'pointer' }} />
   );
 }
 
