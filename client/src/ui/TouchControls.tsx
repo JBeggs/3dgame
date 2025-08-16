@@ -40,7 +40,11 @@ export function TouchControls() {
     };
   }, []);
   return (
-    <div ref={padRef} style={{ position: 'absolute', left: 12, bottom: 12, width: 140, height: 140, borderRadius: 70, background: 'rgba(255,255,255,0.06)', touchAction: 'none', userSelect: 'none', cursor: 'pointer' }} />
+    <div
+      ref={padRef}
+      onContextMenu={(e) => { e.preventDefault(); }}
+      style={{ position: 'absolute', left: 12, bottom: 12, width: 140, height: 140, borderRadius: 70, background: 'rgba(255,255,255,0.06)', touchAction: 'none', userSelect: 'none', cursor: 'pointer', zIndex: 10 }}
+    />
   );
 }
 
