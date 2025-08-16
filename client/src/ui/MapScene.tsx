@@ -108,7 +108,7 @@ export function MapScene() {
   }, [grid]);
   return <>
     <InstancedWalls positions={wallPositions} size={cellSize} />
-    <Decorations rooms={grid.rooms} cellSize={cellSize} seed={defaultSeed} />
+    <Decorations rooms={grid.rooms} cellSize={cellSize} seed={mapState.seed} />
     {/* Spawn smart spiders in lair rooms */}
     {grid.rooms.map((r, i) => (r.tag === 'lair') && (
       <SmartSpider 
