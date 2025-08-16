@@ -17,7 +17,7 @@ Config
 - Client auto-connects to `ws://<host>:8080`. Override with `VITE_WS_URL`.
 
 Next extensions
-- Snapshot interpolation buffer (currently immediate updates).
+- Snapshot interpolation buffer (implemented simple linear interpolation between last two snapshots).
 - Input-based client prediction with reconciliation.
 - Per-room lobbies and presence (join/leave events).
 - Replace spheres with avatar instances and nameplates.

@@ -31,12 +31,19 @@ function Scene() {
       </mesh>
       <gridHelper args={[20, 20, '#444', '#333']} />
       {/* Other players */}
-      {Array.from(net.players.values()).map((p) => (
-        <mesh key={p.id} position={[p.x, p.y, p.z]}>
+      {Array.from(net.players.values()).map((p) => {
+        const prev = net.playersPrev.get(p.id) || p;
+        const dt = Math.max(16, net.tCurr - net.tPrev);
+        const alpha = Math.min(1, (performance.now() - net.tCurr) / dt);
+        const ix = prev.x + (p.x - prev.x) * alpha;
+        const iy = prev.y + (p.y - prev.y) * alpha;
+        const iz = prev.z + (p.z - prev.z) * alpha;
+        return (
+        <mesh key={p.id} position={[ix, iy, iz]}>
           <sphereGeometry args={[0.25, 12, 12]} />
           <meshStandardMaterial color="#ff8a00" />
-        </mesh>
-      ))}
+        </mesh>);
+      })}
     </>
   );
 }

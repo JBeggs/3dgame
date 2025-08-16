@@ -7,6 +7,9 @@ type Store = {
   connected: boolean;
   selfId: number | null;
   players: Map<number, PlayerSnapshot>;
+  playersPrev: Map<number, PlayerSnapshot>;
+  tPrev: number;
+  tCurr: number;
   messages: { from: number; text: string }[];
   subscribers: Set<() => void>;
 };
@@ -15,6 +18,9 @@ const store: Store = {
   connected: false,
   selfId: null,
   players: new Map(),
+  playersPrev: new Map(),
+  tPrev: 0,
+  tCurr: 0,
   messages: [],
   subscribers: new Set(),
 };
@@ -57,7 +63,11 @@ export function connect(): NetAPI {
           emit();
           break;
         case 'players': {
-          // full snapshot
+          // full snapshot with simple timeline
+          const now = performance.now();
+          store.tPrev = store.tCurr || now;
+          store.tCurr = now;
+          store.playersPrev = store.players;
           const m = new Map<number, PlayerSnapshot>();
           for (const p of msg.list as PlayerSnapshot[]) m.set(p.id, p);
           store.players = m;
