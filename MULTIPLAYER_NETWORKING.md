@@ -1,4 +1,4 @@
-### Multiplayer Networking (MVP)
+### Multiplayer Networking (MVP) — Completed
 
 What was added
 - **Server** (`server/src/index.js`): WebSocket server broadcasting player snapshots at 10Hz; chat messages; assigns `id` per client.
@@ -21,5 +21,10 @@ Next extensions
 - Input-based client prediction with reconciliation.
 - Per-room lobbies and presence (join/leave events).
 - Replace spheres with avatar instances and nameplates.
+
+Files
+- `server/src/index.js`
+- `client/src/net/net.ts`
+
 
 
