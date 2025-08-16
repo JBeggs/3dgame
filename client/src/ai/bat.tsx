@@ -194,10 +194,8 @@ export function Bat({
     // Apply movement with smooth interpolation
     ref.current.position.lerp(targetPosition, dt * 3);
     
-    // Update visual state with alertness bonus
-    const newState = aiController.getState();
-    const baseAlert = aiController.getAlertLevel();
-    const boostedAlert = Math.min(1, baseAlert + alertnessBonus);
+    // Update visual state with alertness bonus (reuse newAlert from above)
+    const boostedAlert = Math.min(1, newAlert + alertnessBonus);
     
     if (newState !== currentState) {
       setCurrentState(newState);
