@@ -2,6 +2,7 @@ export type InputState = {
   forward: number;
   right: number;
   jump: boolean;
+  action: boolean;
 };
 
 type InputAPI = {
@@ -17,7 +18,7 @@ let singleton: InputAPI | null = null;
 export function getInput(): InputAPI {
   if (singleton) return singleton;
 
-  const state: InputState = { forward: 0, right: 0, jump: false };
+  const state: InputState = { forward: 0, right: 0, jump: false, action: false };
   const keys = new Set<string>();
 
   function recalc() {
@@ -32,11 +33,13 @@ export function getInput(): InputAPI {
   function onKeyDown(e: KeyboardEvent) {
     keys.add(e.code);
     if (e.code === 'Space') state.jump = true;
+    if (e.code === 'KeyE') state.action = true;
     recalc();
   }
   function onKeyUp(e: KeyboardEvent) {
     keys.delete(e.code);
     if (e.code === 'Space') state.jump = false;
+    if (e.code === 'KeyE') state.action = false;
     recalc();
   }
 
@@ -47,6 +50,8 @@ export function getInput(): InputAPI {
   function setJump(v: boolean) {
     state.jump = v;
   }
+  // Optional: consumer can set action programmatically (e.g., touch button)
+  function setAction(v: boolean) { state.action = v; }
 
   singleton = {
     state,
@@ -60,6 +65,7 @@ export function getInput(): InputAPI {
     },
     setVector,
     setJump,
+    setAction,
   };
   return singleton;
 }

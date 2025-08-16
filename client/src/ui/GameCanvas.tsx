@@ -7,6 +7,7 @@ import { MapScene } from './MapScene';
 import { HUD } from './HUD';
 import { Interactables } from './Interactables';
 import { TouchControls } from './TouchControls';
+import { Prompt } from './Prompt';
 
 function Scene() {
   const net = useNet();
