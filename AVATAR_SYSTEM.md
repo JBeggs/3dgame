@@ -5,7 +5,7 @@ Scope implemented in this pass
 - Selection UI (color pickers) with localStorage persistence.
 
 Next
-- Swap body/head/outfit presets and lazy-load glTF assets.
+- Swap body/head/outfit presets and lazy-load glTF assets. Initial loader added with `/assets/avatar/{id}.glb` lookup and primitive fallback.
 - Expose `setAvatar(config)` API for host app integration.
 
 Steps
@@ -15,7 +15,10 @@ Steps
 4. Replace `PlayerMesh` geometry with composed avatar root.
 
 Files
-- `client/src/avatar/store.ts`, `client/src/avatar/Avatar.tsx`, `client/src/ui/AvatarPanel.tsx`, `client/src/game/player.tsx` (uses `AvatarRoot`).
+- `client/src/avatar/store.ts`, `client/src/avatar/Avatar.tsx`, `client/src/avatar/loader.ts`, `client/src/ui/AvatarPanel.tsx`, `client/src/game/player.tsx` (uses `AvatarRoot`).
+
+Usage
+- Place optional GLB files at `/web/assets/avatar/{bodyId|headId|outfitId}.glb`. If absent, the placeholder primitives render instead.
 
 Notes
 - Asset compression and real meshes come next; for now, this is the UI/system scaffold.
