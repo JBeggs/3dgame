@@ -13,6 +13,7 @@ import { WinOverlay } from './WinOverlay';
 import { useInventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
 import { MiniMap } from './MiniMap';
+import { MapControlsPanel } from './MapControlsPanel';
 
 function Scene() {
   const net = useNet();
@@ -55,6 +56,7 @@ export function GameCanvas() {
       <HUD />
       <AvatarPanel />
       <TouchControls />
+      <MapControlsPanel />
       <MiniMap />
       <WinOverlay visible={won} />
     </div>

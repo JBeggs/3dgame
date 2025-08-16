@@ -7,7 +7,9 @@ import { getCoinTarget } from '../game/config';
 import { setGrid } from '../game/worldState';
 
 export function MapScene() {
-  const grid = useMemo(() => generateDungeon(1, 48, 36, 10), []);
+  const defaultSeed = Number(localStorage.getItem('genSeed') || 1);
+  const defaultRooms = Number(localStorage.getItem('genRooms') || 10);
+  const grid = useMemo(() => generateDungeon(defaultSeed, 48, 36, defaultRooms), [defaultSeed, defaultRooms]);
   const cellSize = 1.2; // expand grid scale a bit for wider corridors
   // Coins: one at many room centers; deterministic IDs
   const coins = useMemo(() => {
