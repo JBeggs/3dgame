@@ -268,8 +268,22 @@ export function AvatarRoot({
     });
   });
 
+  console.log('🎭 AvatarRoot rendering:', { 
+    loadedBody: !!loadedBody, 
+    loadedHead: !!loadedHead, 
+    loadedOutfit: !!loadedOutfit,
+    primary: primary.getHexString(),
+    secondary: secondary.getHexString()
+  });
+
   return (
     <group ref={groupRef} position={position as any}>
+      {/* Debug: Always show a test mesh */}
+      <mesh position={[0, 2, 0]} castShadow>
+        <boxGeometry args={[0.2, 0.2, 0.2]} />
+        <meshStandardMaterial color="#ff0000" />
+      </mesh>
+      
       {/* Body */}
       {loadedBody ? <primitive object={loadedBody.clone()} /> : (
         <mesh castShadow>
