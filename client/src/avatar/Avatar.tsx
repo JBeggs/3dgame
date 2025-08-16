@@ -77,6 +77,12 @@ export function AvatarRoot({
         <meshStandardMaterial color="#4a4a4a" />
       </mesh>
       
+      {/* Front indicator - small red cube to show which way is forward */}
+      <mesh position={[0, 0.5, 0.25]} castShadow>
+        <boxGeometry args={[0.1, 0.1, 0.1]} />
+        <meshStandardMaterial color="#ff0000" />
+      </mesh>
+      
       {/* Optional Hat */}
       {cfg.accessories.hat && (
         <mesh position={[0, 1.1, 0]} castShadow>

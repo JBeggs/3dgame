@@ -75,7 +75,17 @@ export function PlayerMesh() {
     // Update avatar rotation based on movement
     const movementSpeed = Math.hypot(playerBody.velocity.x, playerBody.velocity.z);
     if (movementSpeed > 0.1) {
-      avatarRotationRef.current = Math.atan2(playerBody.velocity.x, playerBody.velocity.z);
+      // Calculate angle to face movement direction
+      // Avatar's default front is positive Z, so we need to adjust the calculation
+      const angle = Math.atan2(playerBody.velocity.x, playerBody.velocity.z);
+      avatarRotationRef.current = angle;
+      
+      // Debug logging for rotation
+      console.log('🧭 Movement:', {
+        velocity: `x:${playerBody.velocity.x.toFixed(2)}, z:${playerBody.velocity.z.toFixed(2)}`,
+        angle: `${(angle * 180 / Math.PI).toFixed(0)}°`,
+        speed: movementSpeed.toFixed(2)
+      });
     }
     
     physics.step(dt);
