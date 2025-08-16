@@ -18,12 +18,12 @@ export function generateLobby(config: LobbyConfig): Grid {
   const { w, h } = sizes[config.size];
   const cells = new Array(w * h).fill(1); // Start with all walls
   
-  // Create a single open room in the center
-  const roomSize = Math.floor(Math.min(w, h) * 0.7); // 70% of the smallest dimension
+  // Create a single open room that fills most of the space
+  const roomSize = Math.floor(Math.min(w, h) * 0.8); // 80% of the smallest dimension  
   const startX = Math.floor((w - roomSize) / 2);
   const startY = Math.floor((h - roomSize) / 2);
   
-  // Clear the room area
+  // Clear the room area - NO DOORS, just solid walls around a room
   for (let y = startY; y < startY + roomSize; y++) {
     for (let x = startX; x < startX + roomSize; x++) {
       if (x >= 0 && x < w && y >= 0 && y < h) {
@@ -83,7 +83,7 @@ export function generateLobby(config: LobbyConfig): Grid {
 }
 
 export const defaultLobbyConfig: LobbyConfig = {
-  size: 'small',
+  size: 'medium', // Make it bigger for easier testing
   theme: 'simple', // Keep it simple for movement testing
   hasEnemies: false, // No enemies for now
   hasPickups: false  // No pickups for now - just test movement

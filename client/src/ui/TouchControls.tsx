@@ -120,12 +120,14 @@ export function TouchControls() {
         const normalizedY = dy / Math.max(originalMag, 0.001);
         targetInput.current.x = normalizedX * finalMag;
         targetInput.current.y = -normalizedY * finalMag; // Invert Y for game coordinates
-        console.log('Touch input:', { 
-          x: targetInput.current.x, 
-          y: targetInput.current.y, 
-          mag: finalMag,
-          outsideBounds: originalMag > 1
-        }); // Debug
+        // Only log significant touch input changes
+        if (Math.abs(targetInput.current.x) > 0.1 || Math.abs(targetInput.current.y) > 0.1) {
+          console.log('📱 Touch:', { 
+            x: targetInput.current.x.toFixed(2), 
+            y: targetInput.current.y.toFixed(2), 
+            outside: originalMag > 1 ? '📍' : ''
+          });
+        }
       }
     }
     function onTouchStart(e: TouchEvent) { 
@@ -262,8 +264,8 @@ export function TouchControls() {
         ref={jumpRef}
         onMouseDown={(e) => { e.preventDefault(); getInput().setJump(true); }}
         onMouseUp={(e) => { e.preventDefault(); getInput().setJump(false); }}
-        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setJump(true); console.log('Jump touch start'); }}
-        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setJump(false); console.log('Jump touch end'); }}
+        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setJump(true); console.log('🦘 Jump!'); }}
+        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setJump(false); }}
         onTouchCancel={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setJump(false); }}
         style={{ 
           position: 'fixed', // Changed for iOS
@@ -293,8 +295,8 @@ export function TouchControls() {
         ref={actionRef}
         onMouseDown={(e) => { e.preventDefault(); getInput().setAction(true); }}
         onMouseUp={(e) => { e.preventDefault(); getInput().setAction(false); }}
-        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setAction(true); console.log('Action touch start'); }}
-        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setAction(false); console.log('Action touch end'); }}
+        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setAction(true); console.log('⚡ Action!'); }}
+        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setAction(false); }}
         onTouchCancel={(e) => { e.preventDefault(); e.stopPropagation(); getInput().setAction(false); }}
         style={{ 
           position: 'fixed', // Changed for iOS

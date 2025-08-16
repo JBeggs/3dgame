@@ -32,7 +32,7 @@ export function getInput(): InputAPI {
   }
 
   function onKeyDown(e: KeyboardEvent) {
-    console.log('KeyDown event:', e.code, 'keys:', Array.from(keys)); // Debug logging
+    console.log('⌨️ Key:', e.code); // Simpler debug logging
     // ensure canvas has focus even if UI clicked
     if (document.activeElement && (document.activeElement as HTMLElement).blur) {
       try { (document.activeElement as HTMLElement).blur(); } catch {}
@@ -44,15 +44,12 @@ export function getInput(): InputAPI {
     if (e.code === 'Space') state.jump = true;
     if (e.code === 'KeyE') state.action = true;
     recalc();
-    console.log('Input state after keydown:', state); // Debug logging
   }
   function onKeyUp(e: KeyboardEvent) {
-    console.log('KeyUp event:', e.code); // Debug logging
     keys.delete(e.code);
     if (e.code === 'Space') state.jump = false;
     if (e.code === 'KeyE') state.action = false;
     recalc();
-    console.log('Input state after keyup:', state); // Debug logging
   }
 
   function setVector(right: number, forward: number) {

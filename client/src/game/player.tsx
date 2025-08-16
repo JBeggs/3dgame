@@ -28,15 +28,13 @@ export function usePlayerController() {
     const speed = 5.5;
     if (move.lengthSq() > 1) move.normalize();
     
-    // Debug logging for input issues
-    if (input.state.right !== 0 || input.state.forward !== 0 || input.state.jump) {
-      console.log('Input detected:', {
-        right: input.state.right,
-        forward: input.state.forward,
-        jump: input.state.jump,
-        action: input.state.action,
-        grounded: physics.isGrounded(),
-        playerPos: { x: playerBody.position.x, y: playerBody.position.y, z: playerBody.position.z }
+    // Light debug logging - only log when input changes
+    const hasInput = input.state.right !== 0 || input.state.forward !== 0 || input.state.jump;
+    if (hasInput) {
+      console.log('🎮 Movement:', {
+        direction: `${input.state.right.toFixed(1)}, ${input.state.forward.toFixed(1)}`,
+        jump: input.state.jump ? 'YES' : 'no',
+        grounded: physics.isGrounded() ? 'YES' : 'no'
       });
     }
     
