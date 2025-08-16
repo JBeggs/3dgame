@@ -12,8 +12,18 @@ export function TouchControls() {
       const r = el.getBoundingClientRect();
       const cx = r.left + r.width / 2;
       const cy = r.top + r.height / 2;
-      const dx = (clientX - cx) / (r.width / 2);
-      const dy = (clientY - cy) / (r.height / 2);
+      let dx = (clientX - cx) / (r.width / 2);
+      let dy = (clientY - cy) / (r.height / 2);
+      // deadzone + smoothing
+      const mag = Math.hypot(dx, dy);
+      const dead = 0.15;
+      if (mag < dead) { dx = 0; dy = 0; }
+      else {
+        const t = (mag - dead) / (1 - dead);
+        const scale = Math.max(0, Math.min(1, t));
+        dx = (dx / mag) * scale;
+        dy = (dy / mag) * scale;
+      }
       input.setVector(dx, -dy);
     }
     function onTouchStart(e: TouchEvent) { active = true; const t = e.touches[0]; compute(t.clientX, t.clientY); }

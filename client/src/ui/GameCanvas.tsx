@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, StatsGl } from '@react-three/drei';
+import { OrbitControls, StatsGl, Text } from '@react-three/drei';
 import { PlayerMesh } from '../game/player';
 import { useNet } from '../net/net';
 import { MapScene } from './MapScene';
@@ -30,7 +30,7 @@ function Scene() {
         <meshStandardMaterial color="#2a2f39" />
       </mesh>
       <gridHelper args={[20, 20, '#444', '#333']} />
-      {/* Other players */}
+      {/* Other players with nameplates */}
       {Array.from(net.players.values()).map((p) => {
         const prev = net.playersPrev.get(p.id) || p;
         const dt = Math.max(16, net.tCurr - net.tPrev);
@@ -38,14 +38,26 @@ function Scene() {
         const ix = prev.x + (p.x - prev.x) * alpha;
         const iy = prev.y + (p.y - prev.y) * alpha;
         const iz = prev.z + (p.z - prev.z) * alpha;
+        const color = idToColor(p.id);
         return (
-        <mesh key={p.id} position={[ix, iy, iz]}>
-          <sphereGeometry args={[0.25, 12, 12]} />
-          <meshStandardMaterial color="#ff8a00" />
-        </mesh>);
+          <group key={p.id} position={[ix, iy, iz]}>
+            <mesh>
+              <sphereGeometry args={[0.25, 12, 12]} />
+              <meshStandardMaterial color={color} />
+            </mesh>
+            <Text position={[0, 0.6, 0]} fontSize={0.25} color={color} anchorX="center" anchorY="middle">
+              {`P${p.id}`}
+            </Text>
+          </group>
+        );
       })}
     </>
   );
+}
+
+function idToColor(id: number): string {
+  const hue = (id * 47) % 360;
+  return `hsl(${hue} 80% 60%)`;
 }
 
 export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: boolean }) {
