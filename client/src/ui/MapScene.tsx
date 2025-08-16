@@ -5,6 +5,8 @@ import { Spider } from '../ai/spider';
 import { inventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
 import { setGrid } from '../game/worldState';
+import * as THREE from 'three';
+import { getInput } from '../game/input';
 
 export function MapScene() {
   const defaultSeed = Number(localStorage.getItem('genSeed') || 1);
@@ -62,33 +64,70 @@ export function MapScene() {
     placeSpawn();
   }, [grid]);
 
-  const meshes = [] as React.ReactNode[];
-  for (let y = 0; y < grid.h; y++) {
-    for (let x = 0; x < grid.w; x++) {
-      const isWall = grid.cells[y * grid.w + x] === 1;
-      if (isWall) {
-        meshes.push(
-          <mesh key={`w-${x}-${y}`} position={[(x + 0.5) * cellSize, 0.5, (y + 0.5) * cellSize]} castShadow receiveShadow>
-            <boxGeometry args={[cellSize, 1, cellSize]} />
-            <meshStandardMaterial color="#555" />
-          </mesh>
-        );
+  // Instanced wall meshes for performance
+  const wallPositions = useMemo(() => {
+    const pts: THREE.Vector3[] = [];
+    for (let y = 0; y < grid.h; y++) {
+      for (let x = 0; x < grid.w; x++) {
+        if (grid.cells[y * grid.w + x] === 1) {
+          pts.push(new THREE.Vector3((x + 0.5) * cellSize, 0.5, (y + 0.5) * cellSize));
+        }
       }
     }
-  }
+    return pts;
+  }, [grid]);
   return <>
-    {meshes}
+    <InstancedWalls positions={wallPositions} size={cellSize} />
     {/* Spawn a spider in every third room */}
     {grid.rooms.map((r, i) => (i % 3 === 0) && <Spider key={`sp-${i}`} position={[ (r.cx + 0.5)*cellSize, 0.3, (r.cy + 0.5)*cellSize ] as any} />)}
     {coins.map(c => !collected.has(c.id) && (
-      <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]} onClick={() => { inventory.add('coin', 1); setCollected(new Set(collected).add(c.id)); }}>
+      <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]}>
         <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />
         <meshStandardMaterial color="#ffd54a" emissive="#3a2a00" emissiveIntensity={0.25} />
       </mesh>
     ))}
+    <ProximityCoinCollector coins={coins} collected={collected} setCollected={setCollected} />
     {/* Goal gate unlocks after collecting enough coins; removes physics when unlocked */}
     <GoalGate grid={grid} cellSize={cellSize} />
   </>;
+}
+
+function InstancedWalls({ positions, size }: { positions: THREE.Vector3[]; size: number }) {
+  const ref = useRef<THREE.InstancedMesh>(null!);
+  useEffect(() => {
+    const m = ref.current;
+    for (let i = 0; i < positions.length; i++) {
+      const p = positions[i];
+      const mat = new THREE.Matrix4().makeTranslation(p.x, p.y, p.z);
+      m.setMatrixAt(i, mat);
+    }
+    m.instanceMatrix.needsUpdate = true;
+  }, [positions]);
+  return (
+    <instancedMesh ref={ref as any} args={[undefined as any, undefined as any, positions.length]} castShadow receiveShadow>
+      <boxGeometry args={[size, 1, size]} />
+      <meshStandardMaterial color="#555" />
+    </instancedMesh>
+  );
+}
+
+function ProximityCoinCollector({ coins, collected, setCollected }: { coins: { x:number;y:number;z:number;id:number }[]; collected: Set<number>; setCollected: (s:Set<number>)=>void }) {
+  useEffect(() => {
+    const id = setInterval(() => {
+      const body = getPhysics().playerBody;
+      const px = body.position.x, pz = body.position.z;
+      for (const c of coins) {
+        if (collected.has(c.id)) continue;
+        const dx = c.x - px; const dz = c.z - pz;
+        if (dx*dx + dz*dz < 0.36) {
+          inventory.add('coin', 1);
+          const next = new Set(collected); next.add(c.id); setCollected(next);
+        }
+      }
+    }, 100);
+    return () => clearInterval(id);
+  }, [coins, collected, setCollected]);
+  return null;
 }
 
 function GoalGate({ grid, cellSize }: { grid: any; cellSize: number }) {

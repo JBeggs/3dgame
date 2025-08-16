@@ -16,6 +16,10 @@ Next extensions
 - Door interaction to remove physics blocker upon unlock.
 - Coin pickups now placed per room by the generator; HUD shows target count from config.
 - Goal gate: opens automatically when coin target is met; win overlay shown.
+
+Open for development (TODO)
+- [x] Proximity-based coin collection (implemented)
+- [ ] Proximity prompts for doors and interactions with keybind hint
 - Prompts (E/ tap) rather than clicks; controller/gamepad input.
 
 
