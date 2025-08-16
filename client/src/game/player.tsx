@@ -9,14 +9,18 @@ import { setPlayerPos } from './worldState';
 import { useNet } from '../net/net';
 import { getAudio } from './audio';
 
-export function usePlayerController() {
+export function PlayerMesh() {
+  // Move all logic directly into the component to fix Fast Refresh
   const input = useMemo(() => getInput(), []);
   const physics = useMemo(() => getPhysics(), []);
-  const cameraTarget = useRef(new THREE.Vector3());
 
   useEffect(() => {
+    console.log('🔗 Attaching input system...');
     input.attach();
-    return () => input.detach();
+    return () => {
+      console.log('🔌 Detaching input system...');
+      input.detach();
+    };
   }, [input]);
 
   const net = useMemo(() => connect(), []);
@@ -69,11 +73,6 @@ export function usePlayerController() {
     */
   });
 
-  return { input, physics, cameraTarget } as const;
-}
-
-export function PlayerMesh() {
-  const { physics } = usePlayerController();
   const ref = useRef<THREE.Mesh>(null!);
   const { camera } = useThree();
 
