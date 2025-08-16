@@ -35,6 +35,29 @@ export function MapScene() {
         }
       }
     }
+    // place player at a valid floor cell near the center
+    function placeSpawn() {
+      const cx = Math.floor(grid.w / 2);
+      const cy = Math.floor(grid.h / 2);
+      const maxR = Math.max(grid.w, grid.h);
+      for (let r = 0; r < maxR; r++) {
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            const x = cx + dx, y = cy + dy;
+            if (x < 0 || y < 0 || x >= grid.w || y >= grid.h) continue;
+            if (grid.cells[y * grid.w + x] === 0) {
+              const px = (x + 0.5) * cellSize;
+              const pz = (y + 0.5) * cellSize;
+              const body = phys.playerBody;
+              body.position.set(px, 0.6, pz);
+              body.velocity.set(0, 0, 0);
+              return;
+            }
+          }
+        }
+      }
+    }
+    placeSpawn();
   }, [grid]);
 
   const meshes = [] as React.ReactNode[];
