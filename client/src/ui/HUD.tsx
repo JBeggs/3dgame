@@ -10,7 +10,7 @@ export function HUD() {
   return (
     <div style={{ position: 'absolute', top: 10, left: 10, color: '#fff', fontFamily: 'monospace' }}>
       <div>HP: {Math.round(hp.hp)} / {hp.max}</div>
-      <div>Keys: {inv.items.key} | Coins: {inv.items.coin}/{getCoinTarget()}</div>
+      <div>Keys: {inv.items.key} | Coins: {inv.items.coin}/{getCoinTarget()} ({Math.max(0, getCoinTarget() - inv.items.coin)} left)</div>
       {msg && <div>{msg}</div>}
     </div>
   );
