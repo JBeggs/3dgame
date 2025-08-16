@@ -9,6 +9,7 @@ import { getEnemyHealthManager, EnemyHealth } from '../game/enemyHealth';
 import { getInput } from '../game/input';
 import { getAudio } from '../game/audio';
 import { getParticleManager } from '../effects/ParticleSystem';
+import { getGroupAI, GroupMember, GroupInstruction } from './groupAI';
 
 // Enhanced spider with AI behaviors
 export function Spider({ position = [6, 0.3, 6] as [number, number, number] }) {
@@ -63,6 +64,7 @@ export function SmartSpider({
   const [enemyId] = useState(() => `spider-${Math.random().toString(36).substr(2, 9)}`);
   const [health, setHealth] = useState<EnemyHealth | null>(null);
   const [lastAttackTime, setLastAttackTime] = useState(0);
+  const [groupInstruction, setGroupInstruction] = useState<GroupInstruction | null>(null);
 
   useEffect(() => {
     if (ref.current) {
@@ -75,9 +77,34 @@ export function SmartSpider({
     const initialHealth = enemyHealthManager.createEnemy(enemyId, scaledHealth);
     setHealth(initialHealth);
     
+    // Add to group AI if available
+    const groupAI = getGroupAI();
+    if (groupAI) {
+      const groupMember: GroupMember = {
+        id: enemyId,
+        position: new THREE.Vector3(...position),
+        role: 'flanker', // Will be reassigned by group AI
+        state: 'idle',
+        alertLevel: 0,
+        lastUpdateTime: Date.now(),
+        canSeePlayer: false,
+        distanceToPlayer: 0,
+        updateCallback: (instruction: GroupInstruction) => {
+          setGroupInstruction(instruction);
+        }
+      };
+      groupAI.addMember(groupMember);
+    }
+    
     return () => {
       // Cleanup on unmount
       enemyHealthManager.removeEnemy(enemyId);
+      
+      // Remove from group AI
+      const groupAI = getGroupAI();
+      if (groupAI) {
+        groupAI.removeMember(enemyId);
+      }
     };
   }, [position, enemyId]);
 

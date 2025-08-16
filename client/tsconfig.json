@@ -7,9 +7,10 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {},
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["src", "src/types/**/*"]
 }
 
 

@@ -16,7 +16,6 @@ import { setGrid } from '../game/worldState';
 import { aStar } from '../ai/pathfind';
 import { createNavGrid } from '../gen/navGrid';
 import { NavGridDebug } from './NavGridDebug';
-import * as THREE from 'three';
 import { mulberry32 } from '../gen/mapGen';
 import { getInput } from '../game/input';
 import { getAudio } from '../game/audio';
