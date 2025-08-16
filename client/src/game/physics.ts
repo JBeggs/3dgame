@@ -16,6 +16,9 @@ export function getPhysics(): PhysicsAPI {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
   world.broadphase = new CANNON.SAPBroadphase(world);
   world.allowSleep = true;
+  // Make movement less sticky
+  world.defaultContactMaterial.friction = 0.1;
+  world.defaultContactMaterial.restitution = 0.0;
 
   // Ground plane
   const ground = new CANNON.Body({ mass: 0 });
@@ -25,7 +28,7 @@ export function getPhysics(): PhysicsAPI {
 
   // Player: simple sphere controller
   const radius = 0.4;
-  const playerBody = new CANNON.Body({ mass: 1, linearDamping: 0.9, angularDamping: 1 });
+  const playerBody = new CANNON.Body({ mass: 1, linearDamping: 0.2, angularDamping: 1 });
   playerBody.addShape(new CANNON.Sphere(radius));
   playerBody.position.set(0, radius + 0.01, 0);
   world.addBody(playerBody);

@@ -6,7 +6,7 @@ import { inventory } from '../game/inventory';
 
 export function MapScene() {
   const grid = useMemo(() => generateBSP(1, 36, 36), []);
-  const cellSize = 1;
+  const cellSize = 1.2; // expand grid scale a bit for wider corridors
   // Seeded coin placement for stability
   const coins = useMemo(() => {
     const out: { x: number; y: number; z: number; id: number }[] = [];

@@ -21,15 +21,14 @@ export function usePlayerController() {
   useFrame((_, dt) => {
     const { playerBody } = physics;
     const move = new THREE.Vector3(input.state.right, 0, -input.state.forward);
-    if (move.lengthSq() > 0) {
-      move.normalize().multiplyScalar(6);
-      playerBody.velocity.x = move.x;
-      playerBody.velocity.z = move.z;
-    } else {
-      // damp on ground
-      playerBody.velocity.x *= 0.9;
-      playerBody.velocity.z *= 0.9;
-    }
+    const speed = 5.5;
+    if (move.lengthSq() > 1) move.normalize();
+    // Accelerate toward desired horizontal velocity for smoother motion
+    const targetVx = move.x * speed;
+    const targetVz = move.z * speed;
+    const accel = 20;
+    playerBody.velocity.x += (targetVx - playerBody.velocity.x) * Math.min(1, accel * dt);
+    playerBody.velocity.z += (targetVz - playerBody.velocity.z) * Math.min(1, accel * dt);
     // basic jump
     if (input.state.jump && Math.abs(playerBody.velocity.y) < 0.05) {
       playerBody.velocity.y = 4.5;
