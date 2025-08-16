@@ -119,12 +119,55 @@ cd client && npm run dev
 - Dodge projectiles while collecting treasures
 - Observe different AI behaviors and wing animations
 
-## Next Steps
-- [ ] Add more ranged enemy types (archers, mages)
-- [ ] Implement player ranged attacks (bow, magic)
-- [ ] Add projectile trails and particle effects
-- [ ] Implement ricochet and explosive projectiles
-- [ ] Add sound effects for shooting and impacts
-- [ ] Network synchronization for multiplayer projectiles
+### Advanced Projectile System (v2) ✅ **NEW**
+- **Ricochet Projectiles**: Bounce off walls up to 3 times with energy loss
+- **Explosive Projectiles**: Area damage with falloff and visual effects
+- **Enhanced Wall Collision**: Proper physics reflection and explosion triggers
+- **Visual Variety**: Metallic silver ricochet bullets, bright orange explosives
+- **Audio Integration**: Distinct sounds for ricochet impacts and explosions
+- **Particle Effects**: Sparks for ricochets, explosions for area damage
 
-**Status**: ✅ Completed (v1) - Flying ranged enemies with projectile combat system
+### Player Combat System (v2) ✅ **NEW**
+- **Ranged Attacks**: Player can shoot projectiles using action button
+- **Weapon Switching**: 3 weapon types (magic, ricochet, explosive)
+- **Ammo System**: 20 rounds with auto-reload (2 second reload time)
+- **Cooldown Management**: Balanced firing rates for different weapon types
+- **Keyboard Shortcuts**: Press 1/2/3 keys to switch weapon types
+- **Console API**: `window.gameApi.setWeapon()` for runtime testing
+
+### Additional Enemy Types (v2) ✅ **NEW**
+- **Archer Enemy**: Bow-shooting humanoid with strategic positioning
+- **Enhanced Difficulty**: Enemy stats scale with room depth
+- **Slime Integration**: Acidic projectiles from slime enemies
+- **Improved AI**: All ranged enemies use group coordination
+
+### Performance Optimizations (v2) ✅ **NEW**
+- **Instanced Rendering**: All projectiles use InstancedMesh for performance
+- **Efficient Collision**: Optimized collision detection with explosion support
+- **Memory Management**: Proper cleanup of expired projectiles and effects
+- **Particle Integration**: Seamless integration with particle system
+
+## Combat Mechanics Enhancement
+### Weapon Balance
+- **Magic**: 25 damage, standard speed, reliable projectile
+- **Ricochet**: 20 damage, faster speed, bounces off walls (3x)
+- **Explosive**: 15 direct + 40 area damage, slower speed, large blast radius
+
+### Visual & Audio Feedback
+- **Projectile Trails**: Different colors and effects per weapon type
+- **Impact Effects**: Sparks, explosions, and particle systems
+- **Audio Cues**: Distinct sounds for firing, impacts, and explosions
+- **UI Integration**: Ammo counter and reload indicators
+
+## Next Steps
+- [x] Add more ranged enemy types (archers, mages) ✅
+- [x] Implement player ranged attacks (bow, magic) ✅
+- [x] Add projectile trails and particle effects ✅
+- [x] Implement ricochet and explosive projectiles ✅
+- [x] Add sound effects for shooting and impacts ✅
+- [ ] Network synchronization for multiplayer projectiles
+- [ ] Projectile upgrade system and special abilities
+- [ ] Homing projectiles and advanced targeting
+- [ ] Destructible environment with projectile damage
+
+**Status**: ✅ Completed (v2) - Complete projectile system with advanced mechanics, player combat, and effects

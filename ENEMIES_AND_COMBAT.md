@@ -109,12 +109,49 @@ cd client && npm run dev
 - Press 'N' to toggle navigation debug overlay
 - Watch spiders patrol, chase, and search for the player
 
-## Next Steps
-- [ ] Add ranged enemies with projectile systems
-- [ ] Implement player combat abilities  
-- [ ] Add enemy health and death animations
-- [ ] Group AI behaviors (pack hunting)
-- [ ] Sound effects and particle systems
-- [ ] Difficulty scaling based on room depth
+### Group AI System (v3) ✅ **NEW**
+- **Pack Hunting**: Coordinated group attacks with leader/flanker roles
+- **Surrounding Tactics**: Strategic positioning around the player
+- **Ambush Behaviors**: Setting up intercept positions when player is lost
+- **Intelligence Sharing**: Groups share player location and tactical information
+- **Dynamic Roles**: Leader, flanker, supporter, scout assignments
+- **Formation Management**: Coordinated movement and positioning
 
-**Status**: ✅ Completed (v2) - Advanced AI system with sophisticated pathfinding and behavioral states
+### Enemy Health System (v3) ✅ **NEW**
+- **Health Tracking**: Individual health pools for each enemy type
+- **Damage System**: Progressive damage with visual feedback
+- **Death Animations**: Scaling and rotation effects on enemy death
+- **Health Bars**: Visual health indicators when enemies are damaged
+- **Player Combat**: Action button melee attacks on enemies
+
+### Difficulty Scaling (v3) ✅ **NEW**
+- **Room Depth Calculation**: Progressive difficulty based on distance from start
+- **Stat Multipliers**: Health, damage, speed, and alertness scaling
+- **Enemy Spawn Scaling**: More enemies in deeper rooms
+- **HUD Integration**: Visual difficulty indicator showing current room depth
+- **Balanced Progression**: Carefully tuned multipliers for fair challenge
+
+### Additional Enemies (v3) ✅ **NEW**
+- **Archer**: Ranged bow-shooting humanoid with strategic positioning
+- **Slime**: Bouncing acidic enemy with unique movement patterns
+- **Enhanced Bat**: Flying enemy with improved AI and ranged attacks
+
+### Sound & Particle Effects (v3) ✅ **NEW**
+- **Audio System**: Web Audio API with iOS support for combat sounds
+- **Hit Effects**: Audio feedback for attacks, deaths, and interactions
+- **Particle System**: Death effects, impact particles, and visual feedback
+- **Environmental Audio**: Jump sounds, projectile firing, and ambient effects
+
+## Next Steps
+- [x] Add ranged enemies with projectile systems ✅
+- [x] Implement player combat abilities ✅
+- [x] Add enemy health and death animations ✅  
+- [x] Group AI behaviors (pack hunting) ✅
+- [x] Sound effects and particle systems ✅
+- [x] Difficulty scaling based on room depth ✅
+- [ ] Server authority for combat validation
+- [ ] Network synchronization for multiplayer combat
+- [ ] Advanced group tactics (flanking, retreating)
+- [ ] Boss enemies with unique mechanics
+
+**Status**: ✅ Completed (v3) - Complete combat system with group AI, health, scaling, and effects
