@@ -284,14 +284,21 @@ export function AvatarRoot({
         <meshStandardMaterial color="#ff0000" />
       </mesh>
       
-      {/* Body - FORCE PRIMITIVE FOR NOW */}
-      {false && loadedBody ? (
-        <primitive 
-          object={loadedBody.clone()} 
-          scale={[5, 5, 5]} 
-          position={[0, 0, 0]}
-          rotation={[0, 0, 0]}
-        />
+      {/* Body - DEBUG GLB RENDERING */}
+      {loadedBody ? (
+        <group>
+          <primitive 
+            object={loadedBody.clone()} 
+            scale={[10, 10, 10]} 
+            position={[0, 0, 0]}
+            rotation={[0, Math.PI, 0]}
+          />
+          {/* Debug wireframe to see GLB bounds */}
+          <mesh position={[0, 0, 0]} scale={[10, 10, 10]}>
+            <boxGeometry args={[1, 2, 0.5]} />
+            <meshBasicMaterial color="#ff00ff" wireframe={true} />
+          </mesh>
+        </group>
       ) : (
         <mesh castShadow>
           <capsuleGeometry args={[0.3, 0.6, 8, 16]} />

@@ -32,7 +32,7 @@ export async function loadGLTFPart(id: string): Promise<THREE.Object3D | null> {
     const gltf = await loader.loadAsync(url);
     const obj = gltf.scene || gltf.scenes?.[0] || null;
     
-    // Debug: Log what we loaded
+    // Debug: Log what we loaded + inspect materials
     console.log(`📦 Loaded GLB "${id}":`, {
       url,
       hasScene: !!gltf.scene,
@@ -40,8 +40,33 @@ export async function loadGLTFPart(id: string): Promise<THREE.Object3D | null> {
       animationCount: gltf.animations?.length || 0,
       animationNames: gltf.animations?.map(a => a.name) || [],
       sceneChildren: obj?.children?.length || 0,
-      rawGLTF: gltf
+      boundingBox: obj ? new THREE.Box3().setFromObject(obj) : null
     });
+    
+    // Debug materials
+    if (obj) {
+      obj.traverse((child: any) => {
+        if (child.isMesh) {
+          console.log(`🎨 Mesh "${child.name}":`, {
+            material: child.material?.type,
+            visible: child.visible,
+            color: child.material?.color?.getHexString?.(),
+            opacity: child.material?.opacity,
+            transparent: child.material?.transparent
+          });
+          
+          // Force visibility and add bright color if material is invisible
+          child.visible = true;
+          if (child.material) {
+            child.material.opacity = 1;
+            child.material.transparent = false;
+            if (!child.material.color) {
+              child.material.color = new THREE.Color('#ff0000');
+            }
+          }
+        }
+      });
+    }
     
     // Attach animations to the object so Avatar component can access them
     if (gltf.animations && gltf.animations.length > 0) {
