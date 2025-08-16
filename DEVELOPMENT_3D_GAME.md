@@ -134,8 +134,13 @@ tools/
 - Editor (phase 2): lightweight in‑browser tooling to tweak generator parameters, export JSON.
 
 ### Next Steps
-- Initialize repo with the above structure.
-- Bring in Three.js, R3F, cannon‑es, Yuka; set up Vite + code‑splitting.
-- Implement generator stub and a placeholder modular avatar.
+Completed in first pass
+- Repo initialized with client/server, Three.js + R3F, cannon-es, Vite.
+- Basic procedural map, physics, HUD, inventory, collectibles, door unlock, spider enemy, multiplayer sync, mobile joystick, prompts.
+
+Upcoming
+- Avatar selection & dress-up (modular glTF + color/material variants).
+- Asset compression pipeline (KTX2/Draco/Meshopt) and size audit to keep <10MB.
+- Improved generator and AI nav grid; network authority for gameplay.
 
 
