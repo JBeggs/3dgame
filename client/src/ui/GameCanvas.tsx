@@ -6,6 +6,7 @@ import { useNet } from '../net/net';
 import { MapScene } from './MapScene';
 import { HUD } from './HUD';
 import { Interactables } from './Interactables';
+import { TouchControls } from './TouchControls';
 
 function Scene() {
   const net = useNet();
@@ -44,6 +45,7 @@ export function GameCanvas() {
         <StatsGl />
       </Canvas>
       <HUD />
+      <TouchControls />
     </div>
   );
 }

@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { createInput } from './input';
+import { getInput } from './input';
 import { getPhysics } from './physics';
 import { connect } from '../net/net';
 
 export function usePlayerController() {
-  const input = useMemo(() => createInput(), []);
+  const input = useMemo(() => getInput(), []);
   const physics = useMemo(() => getPhysics(), []);
   const cameraTarget = useRef(new THREE.Vector3());
 
@@ -28,6 +28,10 @@ export function usePlayerController() {
       // damp on ground
       playerBody.velocity.x *= 0.9;
       playerBody.velocity.z *= 0.9;
+    }
+    // basic jump
+    if (input.state.jump && Math.abs(playerBody.velocity.y) < 0.05) {
+      playerBody.velocity.y = 4.5;
     }
     physics.step(dt);
     // send network position (throttled inside net api)
