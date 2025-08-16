@@ -5,7 +5,7 @@ import { useAvatar } from './store';
 import { loadGLTFPart } from './loader';
 
 // Placeholder modular avatar composed of simple primitives
-export function AvatarRoot({ position = [0, 0, 0] as [number, number, number] }) {
+export function AvatarRoot({ position = [0, 0, 0] as [number, number, number], speed = 0 }) {
   const cfg = useAvatar();
   const primary = new THREE.Color(cfg.colors.primary);
   const secondary = new THREE.Color(cfg.colors.secondary);
@@ -13,10 +13,34 @@ export function AvatarRoot({ position = [0, 0, 0] as [number, number, number] })
   const [loadedBody, setLoadedBody] = useState<THREE.Object3D | null>(null);
   const [loadedHead, setLoadedHead] = useState<THREE.Object3D | null>(null);
   const [loadedOutfit, setLoadedOutfit] = useState<THREE.Object3D | null>(null);
+  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const actionsRef = useRef<{ idle?: THREE.AnimationAction; run?: THREE.AnimationAction }>({});
 
   useEffect(() => { loadGLTFPart(cfg.bodyId).then(setLoadedBody); }, [cfg.bodyId]);
   useEffect(() => { loadGLTFPart(cfg.headId).then(setLoadedHead); }, [cfg.headId]);
   useEffect(() => { loadGLTFPart(cfg.outfitId).then(setLoadedOutfit); }, [cfg.outfitId]);
+
+  // If the body GLTF has animations named Idle/Run, set up a mixer and blend by speed
+  useEffect(() => {
+    const root = loadedBody as any;
+    if (!root || !root.animations || root.animations.length === 0) return;
+    const mixer = new THREE.AnimationMixer(root);
+    mixerRef.current = mixer;
+    const idleClip = root.animations.find((a: THREE.AnimationClip) => /idle/i.test(a.name));
+    const runClip = root.animations.find((a: THREE.AnimationClip) => /run|walk/i.test(a.name));
+    if (idleClip) actionsRef.current.idle = mixer.clipAction(idleClip).play();
+    if (runClip) actionsRef.current.run = mixer.clipAction(runClip).play();
+    return () => { mixer.stopAllAction(); };
+  }, [loadedBody]);
+
+  useFrame((_, dt) => {
+    const mixer = mixerRef.current; if (!mixer) return;
+    mixer.update(dt);
+    const s = Math.min(1, speed / 3);
+    const idle = actionsRef.current.idle; const run = actionsRef.current.run;
+    if (idle) idle.weight = 1 - s;
+    if (run) run.weight = s;
+  });
 
   return (
     <group ref={groupRef} position={position as any}>

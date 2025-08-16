@@ -57,7 +57,7 @@ export function PlayerMesh() {
     camera.lookAt(p.x, p.y + 0.5, p.z);
   });
 
-  return <group ref={ref}><AvatarRoot /></group>;
+  return <group ref={ref}><AvatarRoot speed={physics.playerBody.velocity.length()} /></group>;
 }
 
 

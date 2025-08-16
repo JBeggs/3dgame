@@ -5,7 +5,7 @@ Scope implemented in this pass
 - Selection UI (color pickers) with localStorage persistence.
 
 Next
-- Swap body/head/outfit presets and lazy-load glTF assets. Initial loader added with `/assets/avatar/{id}.glb` lookup and primitive fallback.
+- Swap body/head/outfit presets and lazy-load glTF assets. Loader added with `/assets/avatar/{id}.glb` lookup and primitive fallback. If the GLB contains animation clips named `Idle` and `Run/Walk`, they will auto‑blend based on movement speed.
 - Expose `setAvatar(config)` API for host app integration.
 
 Steps
