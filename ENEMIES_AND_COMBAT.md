@@ -16,4 +16,9 @@ Next extensions
 - Multiple enemy types (bat/slime) and spawners from generator tags.
 - Networked enemies (authoritative server).
 
+Open for development (TODO)
+- [ ] Build grid-based pathfinding using exported nav grid
+- [ ] Add ranged attack enemy and simple projectile handling
+- [ ] Health pickups and difficulty curve by room depth
+
 

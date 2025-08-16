@@ -28,6 +28,11 @@ Checklist to verify
 - [ ] Use `window.gameApi.setAvatar({ bodyId: 'bodyB' })` to swap parts at runtime
 - [ ] For cache issues during swaps, call `clearAvatarCache()` after updating files (dev only)
 
+Open for development (TODO)
+- [ ] Provide sample GLBs (tiny) and presets (A/B) for body/head/outfit
+- [ ] Add jump/land animation hooks and crossfade tuning
+- [ ] Accessory slots (hat/cape) with color tints
+
 Notes
 - Asset compression and real meshes come next; for now, this is the UI/system scaffold.
 

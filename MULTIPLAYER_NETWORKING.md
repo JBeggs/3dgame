@@ -22,6 +22,11 @@ Next extensions
 - Per-room lobbies and presence (join/leave events).
 - Replace spheres with avatar instances and nameplates.
 
+Open for development (TODO)
+- [ ] Add nameplates over remote players and colorize by id
+- [ ] Implement simple client prediction (velocity-based) with periodic reconciliation
+- [ ] Add lobby/join flow and per-room presence
+
 Files
 - `server/src/index.js`
 - `client/src/net/net.ts`

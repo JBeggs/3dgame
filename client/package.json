@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 5173"
+    "preview": "vite preview --port 5173",
+    "assets:report": "node ../tools/size-report.mjs client/public/assets || node tools/size-report.mjs client/public/assets"
   },
   "dependencies": {
     "@react-three/drei": "^9.108.2",

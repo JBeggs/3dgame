@@ -23,6 +23,7 @@ Skeleton for next moves
 - [ ] Export a nav grid and simple navmesh for AI pathing
 - [ ] Add decorator pass for props/torches and room connectors with doors
 - [ ] Hot-reload generation without page refresh
+ - [ ] Instance/merge static meshes for performance
 
 Next extensions
 - Real BSP recursion and variable room sizes
