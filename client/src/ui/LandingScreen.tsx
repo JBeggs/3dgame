@@ -4,13 +4,13 @@ import { AvatarPanel } from './AvatarPanel';
 import { avatarStore } from '../avatar/store';
 import { getInput } from '../game/input';
 
-export function LandingScreen({ onStart }: { onStart: () => void }) {
+export function AvatarSetupScreen({ onContinue }: { onContinue: () => void }) {
   const [showAvatar, setShowAvatar] = useState(true);
   const [showMap, setShowMap] = useState(true);
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)', zIndex: 20, pointerEvents: 'auto' }}>
       <div style={{ width: 520, background: 'rgba(20,22,28,0.95)', color: '#fff', borderRadius: 12, padding: 16, fontFamily: 'monospace' }}>
-        <h3 style={{ marginTop: 0 }}>Game Setup</h3>
+        <h3 style={{ marginTop: 0 }}>🎨 Customize Your Avatar</h3>
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <label><input type="checkbox" checked={showAvatar} onChange={(e) => setShowAvatar(e.target.checked)} /> Avatar</label>
@@ -43,12 +43,12 @@ export function LandingScreen({ onStart }: { onStart: () => void }) {
                   input.attach();
                 }, 100);
               } catch {} 
-              onStart(); 
+              onContinue(); 
             }}
             style={{
               padding: '12px 24px',
               fontSize: '16px',
-              background: '#059669',
+              background: '#3b82f6',
               color: '#fff',
               border: 'none',
               borderRadius: '6px',
@@ -56,7 +56,7 @@ export function LandingScreen({ onStart }: { onStart: () => void }) {
               fontWeight: 'bold'
             }}
           >
-            Start Game
+            Continue →
           </button>
         </div>
       </div>

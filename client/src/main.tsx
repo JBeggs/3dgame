@@ -1,15 +1,32 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GameCanvas } from './ui/GameCanvas';
-import { LandingScreen } from './ui/LandingScreen';
+import { MainLandingPage } from './ui/MainLandingPage';
+import { AvatarSetupScreen } from './ui/LandingScreen';
+import { RoomSelectionScreen } from './ui/RoomSelectionScreen';
 import { connect } from './net/net';
 
+type AppScreen = 'landing' | 'avatar' | 'rooms' | 'game';
+
 function App() {
-  const [started, setStarted] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState<AppScreen>('landing');
+  
   return (
     <div style={{ width: '100%', height: '100%' }}>
       <GameCanvas showConfigPanels={false} />
-      {!started && <LandingScreen onStart={() => setStarted(true)} />}
+      
+      {/* Multi-page flow */}
+      {currentScreen === 'landing' && (
+        <MainLandingPage onPlayGame={() => setCurrentScreen('avatar')} />
+      )}
+      
+      {currentScreen === 'avatar' && (
+        <AvatarSetupScreen onContinue={() => setCurrentScreen('rooms')} />
+      )}
+      
+      {currentScreen === 'rooms' && (
+        <RoomSelectionScreen onContinue={() => setCurrentScreen('game')} />
+      )}
     </div>
   );
 }
