@@ -18,13 +18,14 @@ Config
 
 Next extensions
 - Snapshot interpolation buffer (implemented simple linear interpolation between last two snapshots).
+- Client-side prediction/reconciliation: local movement is immediate; periodic server snapshots gently correct drift.
 - Input-based client prediction with reconciliation.
 - Per-room lobbies and presence (join/leave events).
 - Replace spheres with avatar instances and nameplates.
 
 Open for development (TODO)
 - [ ] Add nameplates over remote players and colorize by id
-- [ ] Implement simple client prediction (velocity-based) with periodic reconciliation
+- [x] Implement simple client prediction (velocity-based) with periodic reconciliation
 - [ ] Add lobby/join flow and per-room presence
 
 Files

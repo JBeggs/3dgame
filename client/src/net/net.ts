@@ -10,6 +10,7 @@ type Store = {
   playersPrev: Map<number, PlayerSnapshot>;
   tPrev: number;
   tCurr: number;
+  selfPos: { x: number; y: number; z: number } | null;
   messages: { from: number; text: string }[];
   subscribers: Set<() => void>;
 };
@@ -21,6 +22,7 @@ const store: Store = {
   playersPrev: new Map(),
   tPrev: 0,
   tCurr: 0,
+  selfPos: null,
   messages: [],
   subscribers: new Set(),
 };
@@ -71,6 +73,10 @@ export function connect(): NetAPI {
           store.playersPrev = store.players;
           const m = new Map<number, PlayerSnapshot>();
           for (const p of msg.list as PlayerSnapshot[]) m.set(p.id, p);
+          if (store.selfId != null) {
+            const me = (msg.list as PlayerSnapshot[]).find(p => p.id === store.selfId);
+            if (me) store.selfPos = { x: me.x, y: me.y, z: me.z };
+          }
           store.players = m;
           emit();
           break;

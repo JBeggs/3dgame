@@ -6,6 +6,7 @@ import { getPhysics } from './physics';
 import { connect } from '../net/net';
 import { AvatarRoot } from '../avatar/Avatar';
 import { setPlayerPos } from './worldState';
+import { useNet } from '../net/net';
 
 export function usePlayerController() {
   const input = useMemo(() => getInput(), []);
@@ -18,6 +19,7 @@ export function usePlayerController() {
   }, [input]);
 
   const net = useMemo(() => connect(), []);
+  const netState = useNet();
 
   useFrame((_, dt) => {
     const { playerBody } = physics;
@@ -37,6 +39,18 @@ export function usePlayerController() {
     physics.step(dt);
     // send network position (throttled inside net api)
     net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z);
+    // simple reconciliation: if server pos diverges a lot, snap toward it
+    const sp = netState.selfPos;
+    if (sp) {
+      const dx = sp.x - playerBody.position.x;
+      const dy = sp.y - playerBody.position.y;
+      const dz = sp.z - playerBody.position.z;
+      const err = Math.hypot(dx, dz);
+      if (err > 2.0) {
+        playerBody.position.x += dx * 0.5;
+        playerBody.position.z += dz * 0.5;
+      }
+    }
   });
 
   return { input, physics, cameraTarget } as const;
