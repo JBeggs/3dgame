@@ -8,6 +8,7 @@ import { AvatarRoot } from '../avatar/Avatar';
 import { setPlayerPos } from './worldState';
 import { useNet } from '../net/net';
 import { getAudio } from './audio';
+import { getPlayerCombat, updatePlayerCombat } from './playerCombat';
 
 export function PlayerMesh() {
   // Move all logic directly into the component to fix Fast Refresh
@@ -25,6 +26,7 @@ export function PlayerMesh() {
 
   const net = useMemo(() => connect(), []);
   const netState = useNet();
+  const combat = useMemo(() => getPlayerCombat(), []);
 
   useFrame((_, dt) => {
     const { playerBody } = physics;
@@ -53,6 +55,22 @@ export function PlayerMesh() {
       playerBody.velocity.y = 4.5;
       getAudio().play('jump');
     }
+    
+    // Handle combat input
+    if (input.state.action && combat.canAttack()) {
+      // Aim towards camera forward direction (simple targeting)
+      const cameraDirection = camera.getWorldDirection(new THREE.Vector3());
+      const targetPos = new THREE.Vector3(
+        playerBody.position.x + cameraDirection.x * 10,
+        playerBody.position.y + 0.5,
+        playerBody.position.z + cameraDirection.z * 10
+      );
+      combat.performRangedAttack(targetPos);
+    }
+    
+    // Update combat system
+    updatePlayerCombat();
+    
     physics.step(dt);
     // send network position (throttled inside net api)
     net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z);

@@ -141,6 +141,17 @@ export class ProjectileManager {
   }
 
   getProjectileVisualData(projectile: Projectile) {
+    // Player projectiles get special cyan/blue appearance
+    if (projectile.ownerId === 'player') {
+      return {
+        color: '#00ffff',
+        emissive: '#0088ff',
+        emissiveIntensity: 0.6,
+        scale: [0.15, 0.15, 0.15] as [number, number, number],
+        geometry: 'sphere'
+      };
+    }
+    
     switch (projectile.type) {
       case 'arrow':
         return {
