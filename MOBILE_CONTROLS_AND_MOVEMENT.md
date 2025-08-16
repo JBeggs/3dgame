@@ -3,7 +3,7 @@
 What was added
 - Upgraded input to a singleton with programmatic setters (`getInput()`), enabling shared keyboard + touch.
 - `TouchControls` virtual joystick overlays on mobile and sets movement vector; supports mouse/trackpad drag.
-- Player jump (Space) with basic ground check using vertical velocity.
+- Grounded jump: proper raycast ground check in physics (`isGrounded()`), used by player controller.
 - Keyboard handlers attached with `passive: false` and `preventDefault` for Space/Arrows to avoid page scroll.
 - Joystick listeners marked `passive`, drag requires press-and-hold; context menu disabled; high z-index so it stays interactive.
 - OrbitControls: pan disabled, zoom disabled (to avoid non-passive wheel handler).
@@ -16,7 +16,7 @@ cd client && npm run dev
 - Desktop: WASD + Space. Trackpad/mouse: click and drag inside the left circle. Mobile: press and drag inside the left circle.
 
 Next extensions
-- Dedicated jump/action buttons; proper ground raycast; smoothing for joystick.
+- Smoothing curve for joystick vector; deadzone tuning.
 - Gamepad support and configurable bindings.
 
 Files touched

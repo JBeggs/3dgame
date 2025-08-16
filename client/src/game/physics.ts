@@ -6,6 +6,7 @@ export type PhysicsAPI = {
   step: (dt: number) => void;
   addStaticBox: (x: number, y: number, z: number, sx: number, sy: number, sz: number) => CANNON.Body;
   removeBody: (body: CANNON.Body) => void;
+  isGrounded: () => boolean;
 };
 
 let singleton: PhysicsAPI | null = null;
@@ -48,7 +49,18 @@ export function getPhysics(): PhysicsAPI {
     try { world.removeBody(body); } catch {}
   }
 
-  singleton = { world, playerBody, step, addStaticBox, removeBody };
+  function isGrounded(): boolean {
+    // Simple downward ray check under player
+    const from = new CANNON.Vec3(playerBody.position.x, playerBody.position.y, playerBody.position.z);
+    const to = new CANNON.Vec3(playerBody.position.x, playerBody.position.y - 0.7, playerBody.position.z);
+    const result = new CANNON.RaycastResult();
+    const hit = world.raycastClosest(from, to, { skipBackfaces: true }, result);
+    if (!hit) return false;
+    // Up-facing normal implies ground-like surface
+    return result.hitNormalWorld.y > 0.5;
+  }
+
+  singleton = { world, playerBody, step, addStaticBox, removeBody, isGrounded };
   return singleton;
 }
 

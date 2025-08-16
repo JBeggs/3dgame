@@ -3,6 +3,7 @@ import { getInput } from '../game/input';
 
 export function TouchControls() {
   const padRef = useRef<HTMLDivElement>(null);
+  const jumpRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const input = getInput();
     const el = padRef.current!;
@@ -40,11 +41,21 @@ export function TouchControls() {
     };
   }, []);
   return (
-    <div
-      ref={padRef}
-      onContextMenu={(e) => { e.preventDefault(); }}
-      style={{ position: 'absolute', left: 12, bottom: 12, width: 140, height: 140, borderRadius: 70, background: 'rgba(255,255,255,0.06)', touchAction: 'none', userSelect: 'none', cursor: 'pointer', zIndex: 10 }}
-    />
+    <>
+      <div
+        ref={padRef}
+        onContextMenu={(e) => { e.preventDefault(); }}
+        style={{ position: 'absolute', left: 12, bottom: 12, width: 140, height: 140, borderRadius: 70, background: 'rgba(255,255,255,0.06)', touchAction: 'none', userSelect: 'none', cursor: 'pointer', zIndex: 10 }}
+      />
+      <button
+        ref={jumpRef}
+        onMouseDown={() => getInput().setJump(true)}
+        onMouseUp={() => getInput().setJump(false)}
+        onTouchStart={() => getInput().setJump(true)}
+        onTouchEnd={() => getInput().setJump(false)}
+        style={{ position: 'absolute', right: 12, bottom: 24, width: 72, height: 72, borderRadius: 36, background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', zIndex: 10 }}
+      >Jump</button>
+    </>
   );
 }
 

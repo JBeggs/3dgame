@@ -31,7 +31,7 @@ export function usePlayerController() {
     playerBody.velocity.x += (targetVx - playerBody.velocity.x) * Math.min(1, accel * dt);
     playerBody.velocity.z += (targetVz - playerBody.velocity.z) * Math.min(1, accel * dt);
     // basic jump
-    if (input.state.jump && Math.abs(playerBody.velocity.y) < 0.05) {
+    if (input.state.jump && physics.isGrounded()) {
       playerBody.velocity.y = 4.5;
     }
     physics.step(dt);
