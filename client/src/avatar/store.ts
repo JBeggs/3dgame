@@ -5,6 +5,7 @@ export type AvatarConfig = {
   headId: string;
   outfitId: string;
   colors: { primary: string; secondary: string };
+  accessoryId?: 'none' | 'hatA' | 'capeA';
 };
 
 const DEFAULT: AvatarConfig = {
@@ -12,6 +13,7 @@ const DEFAULT: AvatarConfig = {
   headId: 'headA',
   outfitId: 'robeA',
   colors: { primary: '#a0c8ff', secondary: '#4a3070' },
+  accessoryId: 'none',
 };
 
 const KEY = 'avatarConfigV1';
@@ -41,8 +43,8 @@ export const avatarStore = {
     subs.forEach((f) => f());
   },
   presets: {
-    presetA: { bodyId: 'bodyA', headId: 'headA', outfitId: 'robeA', colors: { primary: '#a0c8ff', secondary: '#4a3070' } } as AvatarConfig,
-    presetB: { bodyId: 'bodyB', headId: 'headB', outfitId: 'robeB', colors: { primary: '#ffd54a', secondary: '#332255' } } as AvatarConfig,
+    presetA: { bodyId: 'bodyA', headId: 'headA', outfitId: 'robeA', colors: { primary: '#a0c8ff', secondary: '#4a3070' }, accessoryId: 'none' } as AvatarConfig,
+    presetB: { bodyId: 'bodyB', headId: 'headB', outfitId: 'robeB', colors: { primary: '#ffd54a', secondary: '#332255' }, accessoryId: 'hatA' } as AvatarConfig,
   },
 };
 

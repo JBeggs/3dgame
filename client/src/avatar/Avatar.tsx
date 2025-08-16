@@ -65,6 +65,19 @@ export function AvatarRoot({ position = [0, 0, 0] as [number, number, number], s
           <meshStandardMaterial color={secondary} />
         </mesh>
       )}
+      {/* Accessory slot: simple hat/cape placeholders */}
+      {cfg.accessoryId === 'hatA' && (
+        <mesh position={[0, 1.2, 0]} castShadow>
+          <coneGeometry args={[0.2, 0.3, 8]} />
+          <meshStandardMaterial color={secondary} />
+        </mesh>
+      )}
+      {cfg.accessoryId === 'capeA' && (
+        <mesh position={[0, 0.7, -0.15]} rotation={[0,0,0]} castShadow>
+          <planeGeometry args={[0.4, 0.6]} />
+          <meshStandardMaterial color={primary} side={THREE.DoubleSide} />
+        </mesh>
+      )}
     </group>
   );
 }
