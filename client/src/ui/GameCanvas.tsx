@@ -43,7 +43,7 @@ export function GameCanvas() {
           <Scene />
           <Interactables />
         </Suspense>
-        <OrbitControls makeDefault enableDamping enablePan={false} />
+        <OrbitControls makeDefault enableDamping enablePan={false} enableZoom={false} />
         <StatsGl />
       </Canvas>
       <HUD />
