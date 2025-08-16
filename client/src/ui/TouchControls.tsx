@@ -115,6 +115,7 @@ export function TouchControls() {
         const normalizedY = dy / Math.max(mag, 0.001);
         targetInput.current.x = normalizedX * finalMag;
         targetInput.current.y = -normalizedY * finalMag; // Invert Y for game coordinates
+        console.log('Touch input:', { x: targetInput.current.x, y: targetInput.current.y, mag: finalMag }); // Debug
       }
     }
     function onTouchStart(e: TouchEvent) { 

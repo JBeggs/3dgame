@@ -82,15 +82,21 @@ export function MapScene() {
       const px = (bestX + 0.5) * cellSize;
       const pz = (bestY + 0.5) * cellSize;
       const body = phys.playerBody;
+      console.log('Spawning player at:', { x: px, y: 0.6, z: pz, bestScore });
       body.position.set(px, 0.6, pz);
       body.velocity.set(0, 0, 0);
+      console.log('Player body positioned:', body.position);
     }
     placeSpawn();
     
-    // Debug toggle for nav grid
+    // Debug toggle for nav grid and manual respawn
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'n' || e.key === 'N') {
         setShowNavDebug(prev => !prev);
+      }
+      if (e.key === 'r' || e.key === 'R') {
+        console.log('Manual respawn triggered');
+        placeSpawn();
       }
     };
     

@@ -27,6 +27,19 @@ export function usePlayerController() {
     const move = new THREE.Vector3(input.state.right, 0, -input.state.forward);
     const speed = 5.5;
     if (move.lengthSq() > 1) move.normalize();
+    
+    // Debug logging for input issues
+    if (input.state.right !== 0 || input.state.forward !== 0 || input.state.jump) {
+      console.log('Input detected:', {
+        right: input.state.right,
+        forward: input.state.forward,
+        jump: input.state.jump,
+        action: input.state.action,
+        grounded: physics.isGrounded(),
+        playerPos: { x: playerBody.position.x, y: playerBody.position.y, z: playerBody.position.z }
+      });
+    }
+    
     // Accelerate toward desired horizontal velocity for smoother motion
     const targetVx = move.x * speed;
     const targetVz = move.z * speed;

@@ -32,6 +32,7 @@ export function getInput(): InputAPI {
   }
 
   function onKeyDown(e: KeyboardEvent) {
+    console.log('KeyDown event:', e.code, 'keys:', Array.from(keys)); // Debug logging
     // ensure canvas has focus even if UI clicked
     if (document.activeElement && (document.activeElement as HTMLElement).blur) {
       try { (document.activeElement as HTMLElement).blur(); } catch {}
@@ -43,12 +44,15 @@ export function getInput(): InputAPI {
     if (e.code === 'Space') state.jump = true;
     if (e.code === 'KeyE') state.action = true;
     recalc();
+    console.log('Input state after keydown:', state); // Debug logging
   }
   function onKeyUp(e: KeyboardEvent) {
+    console.log('KeyUp event:', e.code); // Debug logging
     keys.delete(e.code);
     if (e.code === 'Space') state.jump = false;
     if (e.code === 'KeyE') state.action = false;
     recalc();
+    console.log('Input state after keyup:', state); // Debug logging
   }
 
   function setVector(right: number, forward: number) {
@@ -67,6 +71,11 @@ export function getInput(): InputAPI {
     const gamepads = navigator.getGamepads();
     const gamepad = gamepads[0]; // Use first connected gamepad
     if (gamepad) {
+      // Only log when buttons are pressed or axes moved significantly
+      const hasInput = gamepad.buttons.some(b => b.pressed) || Math.abs(gamepad.axes[0]) > 0.1 || Math.abs(gamepad.axes[1]) > 0.1;
+      if (hasInput) {
+        console.log('Gamepad input:', gamepad.id, 'axes:', [gamepad.axes[0], gamepad.axes[1]], 'buttons:', gamepad.buttons.map(b => b.pressed));
+      }
       // Left stick for movement
       const leftX = gamepad.axes[0] || 0;
       const leftY = gamepad.axes[1] || 0;
@@ -101,6 +110,7 @@ export function getInput(): InputAPI {
   singleton = {
     state,
     attach() {
+      console.log('Attaching input system...'); // Debug logging
       window.addEventListener('keydown', onKeyDown, { passive: false });
       window.addEventListener('keyup', onKeyUp, { passive: true });
       document.addEventListener('keydown', onKeyDown, { passive: false });
@@ -108,6 +118,7 @@ export function getInput(): InputAPI {
       
       // Start gamepad polling
       gamepadInterval = window.setInterval(pollGamepad, 16); // ~60fps
+      console.log('Input system attached, gamepad polling started'); // Debug logging
     },
     detach() {
       window.removeEventListener('keydown', onKeyDown as any);
