@@ -8,6 +8,8 @@ import { Archer } from '../ai/archer';
 import { Slime } from '../ai/slime';
 import { Doorframes } from './Doorframes';
 import { ProjectileRenderer } from './ProjectileRenderer';
+import { InstancedTorches, InstancedCoins } from './InstancedMeshes';
+import * as THREE from 'three';
 import { inventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
 import { setGrid } from '../game/worldState';
@@ -138,6 +140,7 @@ export function MapScene() {
       <>
         <Doorframes grid={grid} cellSize={cellSize} />
         <Decorations rooms={grid.rooms} cellSize={cellSize} seed={mapState.seed} />
+      <InstancedCoins coins={coins} collected={collected} />
         {/* Spawn smart spiders in lair rooms with difficulty scaling */}
     {grid.rooms.flatMap((r, roomIndex) => {
       if (r.tag !== 'lair') return [];
@@ -311,12 +314,8 @@ export function MapScene() {
       </>
     )}
     
-    {coins.map(c => !collected.has(c.id) && (
-      <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]}>
-        <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />
-        <meshStandardMaterial color="#ffd54a" emissive="#3a2a00" emissiveIntensity={0.25} />
-      </mesh>
-    ))}
+    {/* Coins now use instanced rendering for better performance */}
+    <InstancedCoins coins={coins} collected={collected} />
     <ProximityCoinCollector coins={coins} collected={collected} setCollected={setCollected} />
     {/* Goal gate unlocks after collecting enough coins; removes physics when unlocked */}
     <GoalGate grid={grid} cellSize={cellSize} />
@@ -425,43 +424,94 @@ function GoalGate({ grid, cellSize }: { grid: any; cellSize: number }) {
 }
 
 function Decorations({ rooms, cellSize, seed }: { rooms: any[]; cellSize: number; seed: number }) {
-  const rnd = mulberry32(seed + 12345);
-  const nodes: React.ReactNode[] = [];
-  for (const r of rooms) {
-    const cx = (r.cx + 0.5) * cellSize;
-    const cz = (r.cy + 0.5) * cellSize;
-    // Torch lights in lairs/treasure rooms
-    if (r.tag === 'lair' || r.tag === 'treasure') {
-      const count = r.tag === 'lair' ? 2 : 1;
-      for (let i = 0; i < count; i++) {
-        const angle = rnd() * Math.PI * 2;
-        const rad = Math.max(0.6, Math.min(r.w, r.h) * 0.3) * cellSize;
-        const x = cx + Math.cos(angle) * rad;
-        const z = cz + Math.sin(angle) * rad;
-        nodes.push(
-          <group key={`torch-${r.cx}-${r.cy}-${i}`} position={[x, 0.9, z] as any}>
-            <pointLight color={'#ffb347'} intensity={0.7} distance={4} decay={2} />
-            <mesh>
-              <sphereGeometry args={[0.08, 8, 8]} />
-              <meshStandardMaterial emissive={'#ff8c00'} color={'#552200'} emissiveIntensity={1.2} />
-            </mesh>
-          </group>
-        );
+  // Pre-calculate all torch and prop data for instanced rendering
+  const decorationData = useMemo(() => {
+    const rnd = mulberry32(seed + 12345);
+    const torches: { position: [number, number, number]; color: string; emissive: string; intensity: number }[] = [];
+    const props: { position: [number, number, number]; color: string }[] = [];
+    
+    for (const r of rooms) {
+      const cx = (r.cx + 0.5) * cellSize;
+      const cz = (r.cy + 0.5) * cellSize;
+      
+      // Torch lights in lairs/treasure rooms
+      if (r.tag === 'lair' || r.tag === 'treasure') {
+        const count = r.tag === 'lair' ? 2 : 1;
+        const color = r.tag === 'lair' ? '#ff4444' : '#ffb347';
+        const intensity = r.tag === 'lair' ? 0.8 : 0.7;
+        
+        for (let i = 0; i < count; i++) {
+          const angle = rnd() * Math.PI * 2;
+          const rad = Math.max(0.6, Math.min(r.w, r.h) * 0.3) * cellSize;
+          const x = cx + Math.cos(angle) * rad;
+          const z = cz + Math.sin(angle) * rad;
+          
+          torches.push({
+            position: [x, 0.9, z],
+            color,
+            emissive: '#ff8c00',
+            intensity
+          });
+        }
+      }
+      
+      // Simple props in normal rooms  
+      if (r.tag === 'normal' && rnd() < 0.4) {
+        const px = cx + (rnd() - 0.5) * Math.max(0.5, r.w * 0.3) * cellSize;
+        const pz = cz + (rnd() - 0.5) * Math.max(0.5, r.h * 0.3) * cellSize;
+        
+        props.push({
+          position: [px, 0.4, pz],
+          color: '#6b6f7a'
+        });
       }
     }
-    // Simple props in normal rooms
-    if (r.tag === 'normal' && rnd() < 0.4) {
-      const px = cx + (rnd() - 0.5) * Math.max(0.5, r.w * 0.3) * cellSize;
-      const pz = cz + (rnd() - 0.5) * Math.max(0.5, r.h * 0.3) * cellSize;
-      nodes.push(
-        <mesh key={`prop-${r.cx}-${r.cy}`} position={[px, 0.4, pz] as any} castShadow>
-          <boxGeometry args={[0.4, 0.8, 0.4]} />
-          <meshStandardMaterial color={'#6b6f7a'} />
-        </mesh>
+    
+    return { torches, props };
+  }, [rooms, cellSize, seed]);
+
+  return (
+    <group>
+      <InstancedTorches torches={decorationData.torches} />
+      <InstancedProps props={decorationData.props} />
+    </group>
+  );
+}
+
+// Instanced props component
+function InstancedProps({ props }: { props: { position: [number, number, number]; color: string }[] }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null!);
+
+  useEffect(() => {
+    if (!meshRef.current || props.length === 0) return;
+    
+    const mesh = meshRef.current;
+    
+    for (let i = 0; i < props.length; i++) {
+      const prop = props[i];
+      const matrix = new THREE.Matrix4().makeTranslation(
+        prop.position[0], 
+        prop.position[1], 
+        prop.position[2]
       );
+      mesh.setMatrixAt(i, matrix);
     }
-  }
-  return <>{nodes}</>;
+    
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [props]);
+
+  if (props.length === 0) return null;
+
+  return (
+    <instancedMesh 
+      ref={meshRef}
+      args={[undefined, undefined, props.length]}
+      castShadow
+    >
+      <boxGeometry args={[0.4, 0.8, 0.4]} />
+      <meshStandardMaterial color="#6b6f7a" />
+    </instancedMesh>
+  );
 }
 
 
