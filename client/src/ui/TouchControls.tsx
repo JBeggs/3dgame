@@ -45,7 +45,7 @@ export function TouchControls() {
       <div
         ref={padRef}
         onContextMenu={(e) => { e.preventDefault(); }}
-        style={{ position: 'absolute', left: 12, bottom: 'calc(12px + env(safe-area-inset-bottom))', width: 140, height: 140, borderRadius: 70, background: 'rgba(255,255,255,0.06)', touchAction: 'none', userSelect: 'none', cursor: 'pointer', zIndex: 10 }}
+        style={{ position: 'absolute', left: 12, bottom: 'calc(12px + env(safe-area-inset-bottom))', width: 140, height: 140, borderRadius: 70, background: 'rgba(255,255,255,0.06)', touchAction: 'none', userSelect: 'none', cursor: 'pointer', zIndex: 10, pointerEvents: 'auto' as any }}
       />
       <button
         ref={jumpRef}
@@ -53,7 +53,7 @@ export function TouchControls() {
         onMouseUp={() => getInput().setJump(false)}
         onTouchStart={() => getInput().setJump(true)}
         onTouchEnd={() => getInput().setJump(false)}
-        style={{ position: 'absolute', right: 16, bottom: 'calc(110px + env(safe-area-inset-bottom))', width: 72, height: 72, borderRadius: 36, background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', zIndex: 10 }}
+        style={{ position: 'absolute', right: 16, bottom: 'calc(110px + env(safe-area-inset-bottom))', width: 72, height: 72, borderRadius: 36, background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', zIndex: 10, pointerEvents: 'auto' as any }}
       >Jump</button>
     </>
   );
