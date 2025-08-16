@@ -62,4 +62,18 @@ createRoot(el).render(<App />);
 const net = connect();
 (window as any).netJoin = (room: string) => net.joinRoom(room);
 
+// Expose avatar API for console testing
+import { avatarStore } from './avatar/store';
+(window as any).gameApi = {
+  ...((window as any).gameApi || {}),
+  setAvatar: avatarStore.set.bind(avatarStore),
+  getAvatar: avatarStore.get.bind(avatarStore),
+  testAvatar: () => {
+    console.log('🎭 Current avatar config:', avatarStore.get());
+    console.log('🎨 Testing color change...');
+    avatarStore.set({ colors: { primary: '#ff0000', secondary: '#00ff00' } });
+    console.log('✅ Try: window.gameApi.setAvatar({ colors: { primary: "#0000ff" } })');
+  }
+};
+
 
