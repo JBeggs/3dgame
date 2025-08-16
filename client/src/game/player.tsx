@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { createInput } from './input';
 import { createPhysics } from './physics';
+import { connect } from '../net/net';
 
 export function usePlayerController() {
   const input = useMemo(() => createInput(), []);
@@ -27,6 +28,8 @@ export function usePlayerController() {
       playerBody.velocity.z *= 0.9;
     }
     physics.step(dt);
+    // send network position
+    connect().sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z);
   });
 
   return { input, physics, cameraTarget } as const;

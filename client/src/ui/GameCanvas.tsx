@@ -2,8 +2,11 @@ import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, StatsGl } from '@react-three/drei';
 import { PlayerMesh } from '../game/player';
+import { useNet } from '../net/net';
+import ReactDOM from 'react-dom';
 
 function Scene() {
+  const net = useNet();
   return (
     <>
       <ambientLight intensity={0.6} />
@@ -14,6 +17,13 @@ function Scene() {
         <meshStandardMaterial color="#2a2f39" />
       </mesh>
       <gridHelper args={[20, 20, '#444', '#333']} />
+      {/* Other players */}
+      {Array.from(net.players.values()).map((p) => (
+        <mesh key={p.id} position={[p.x, p.y, p.z]}>
+          <sphereGeometry args={[0.25, 12, 12]} />
+          <meshStandardMaterial color="#ff8a00" />
+        </mesh>
+      ))}
     </>
   );
 }
