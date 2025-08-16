@@ -4,7 +4,8 @@ export type PhysicsAPI = {
   world: CANNON.World;
   playerBody: CANNON.Body;
   step: (dt: number) => void;
-  addStaticBox: (x: number, y: number, z: number, sx: number, sy: number, sz: number) => void;
+  addStaticBox: (x: number, y: number, z: number, sx: number, sy: number, sz: number) => CANNON.Body;
+  removeBody: (body: CANNON.Body) => void;
 };
 
 let singleton: PhysicsAPI | null = null;
@@ -38,9 +39,13 @@ export function getPhysics(): PhysicsAPI {
     body.addShape(new CANNON.Box(new CANNON.Vec3(sx / 2, sy / 2, sz / 2)));
     body.position.set(x, y, z);
     world.addBody(body);
+    return body;
+  }
+  function removeBody(body: CANNON.Body) {
+    try { world.removeBody(body); } catch {}
   }
 
-  singleton = { world, playerBody, step, addStaticBox };
+  singleton = { world, playerBody, step, addStaticBox, removeBody };
   return singleton;
 }
 
