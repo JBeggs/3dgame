@@ -106,8 +106,9 @@ export class ProjectileManager {
   checkWallCollisions(
     isWalkable: (x: number, y: number) => boolean,
     cellSize: number
-  ): void {
+  ): Projectile[] {
     const toRemove: string[] = [];
+    const wallHits: Projectile[] = [];
     
     for (const [id, projectile] of this.projectiles) {
       const gridX = Math.floor(projectile.position.x / cellSize);
@@ -115,6 +116,7 @@ export class ProjectileManager {
       
       if (!isWalkable(gridX, gridZ)) {
         toRemove.push(id);
+        wallHits.push({ ...projectile }); // Clone projectile data before removal
       }
     }
     
@@ -122,6 +124,8 @@ export class ProjectileManager {
     for (const id of toRemove) {
       this.projectiles.delete(id);
     }
+    
+    return wallHits;
   }
 
   getAllProjectiles(): Projectile[] {

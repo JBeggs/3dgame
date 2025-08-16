@@ -8,6 +8,7 @@ import { GridNav } from './pathfind';
 import { getEnemyHealthManager, EnemyHealth } from '../game/enemyHealth';
 import { getInput } from '../game/input';
 import { getAudio } from '../game/audio';
+import { getParticleManager } from '../effects/ParticleSystem';
 
 // Enhanced spider with AI behaviors
 export function Spider({ position = [6, 0.3, 6] as [number, number, number] }) {
@@ -92,6 +93,13 @@ export function SmartSpider({
     // If dead, don't update AI, just handle death animation
     if (currentHealth?.isDead) {
       const timeSinceDeath = currentHealth.deathTime ? Date.now() - currentHealth.deathTime : 0;
+      
+      // Create death particle effect on first death frame
+      if (currentHealth.deathTime && timeSinceDeath < 100) { // First 100ms after death
+        const spiderPos = ref.current.position;
+        getParticleManager().createEffect(new THREE.Vector3(spiderPos.x, spiderPos.y + 0.2, spiderPos.z), 'death');
+      }
+      
       const deathProgress = Math.min(timeSinceDeath / 1500, 1); // 1.5 second death animation
       
       // Death animation: scale down and fade

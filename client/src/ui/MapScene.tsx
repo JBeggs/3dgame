@@ -3,6 +3,8 @@ import { generateDungeon } from '../gen/mapGen';
 import { getPhysics } from '../game/physics';
 import { Spider, SmartSpider } from '../ai/spider';
 import { Bat } from '../ai/bat';
+import { Archer } from '../ai/archer';
+import { Slime } from '../ai/slime';
 import { ProjectileRenderer } from './ProjectileRenderer';
 import { inventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
@@ -17,6 +19,7 @@ import { getAudio } from '../game/audio';
 import { useMapState } from '../game/mapStore';
 import { getEnemyHealthManager } from '../game/enemyHealth';
 import { calculateRoomDepth, getScaledEnemyStats } from '../game/difficultyScaling';
+import { ParticleSystem } from '../effects/ParticleSystem';
 
 export function MapScene() {
   const mapState = useMapState();
@@ -187,9 +190,84 @@ export function MapScene() {
         );
       });
     })}
+
+    {/* Spawn archers in normal rooms with difficulty scaling */}
+    {grid.rooms.flatMap((r, roomIndex) => {
+      if (r.tag !== 'normal' || roomIndex % 3 !== 0) return []; // Only some normal rooms
+      
+      const roomDepth = calculateRoomDepth(grid.rooms, r);
+      const archerStats = getScaledEnemyStats(25, 15, roomDepth); // base health 25, base damage 15
+      
+      // Spawn archers (fewer than other enemies due to range)
+      const archerCount = Math.min(2, archerStats.spawnCount);
+      return Array.from({ length: archerCount }, (_, archerIndex) => {
+        const angle = (archerIndex / archerCount) * Math.PI * 2;
+        const radius = Math.min(r.w, r.h) * 0.3 * cellSize;
+        const offsetX = Math.cos(angle) * radius;
+        const offsetZ = Math.sin(angle) * radius;
+        
+        return (
+          <Archer 
+            key={`archer-${roomIndex}-${archerIndex}`} 
+            grid={navGrid} 
+            cellSize={cellSize} 
+            position={[
+              (r.cx + 0.5) * cellSize + offsetX, 
+              0.3, 
+              (r.cy + 0.5) * cellSize + offsetZ
+            ]}
+            healthMultiplier={archerStats.health / 25}
+            damageMultiplier={archerStats.damage / 15}
+            speedMultiplier={archerStats.speedMultiplier}
+            alertnessBonus={archerStats.alertnessBonus}
+          />
+        );
+      });
+    })}
+
+    {/* Spawn slimes in various rooms with size variation */}
+    {grid.rooms.flatMap((r, roomIndex) => {
+      if (roomIndex % 4 !== 1) return []; // Only some rooms get slimes
+      
+      const roomDepth = calculateRoomDepth(grid.rooms, r);
+      const slimeStats = getScaledEnemyStats(30, 8, roomDepth); // base health 30, base damage 8
+      
+      // Mix of slime sizes based on room depth
+      const slimeTypes: Array<'small' | 'normal' | 'large'> = roomDepth < 3 ? ['small', 'normal'] :
+                                                               roomDepth < 6 ? ['normal', 'large'] :
+                                                               ['normal', 'large', 'large'];
+      
+      return slimeTypes.slice(0, slimeStats.spawnCount).map((size, slimeIndex) => {
+        const angle = (slimeIndex / slimeTypes.length) * Math.PI * 2;
+        const radius = Math.min(r.w, r.h) * 0.25 * cellSize;
+        const offsetX = Math.cos(angle) * radius;
+        const offsetZ = Math.sin(angle) * radius;
+        
+        return (
+          <Slime 
+            key={`slime-${roomIndex}-${slimeIndex}`} 
+            grid={navGrid} 
+            cellSize={cellSize} 
+            size={size}
+            position={[
+              (r.cx + 0.5) * cellSize + offsetX, 
+              0.4, 
+              (r.cy + 0.5) * cellSize + offsetZ
+            ]}
+            healthMultiplier={slimeStats.health / 30}
+            damageMultiplier={slimeStats.damage / 8}
+            speedMultiplier={slimeStats.speedMultiplier}
+            alertnessBonus={slimeStats.alertnessBonus}
+          />
+        );
+      });
+    })}
     
     {/* Projectile system */}
     <ProjectileRenderer />
+    
+    {/* Particle effects */}
+    <ParticleSystem />
     {coins.map(c => !collected.has(c.id) && (
       <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]}>
         <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />
