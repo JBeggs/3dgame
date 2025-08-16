@@ -278,27 +278,20 @@ export function AvatarRoot({
 
   return (
     <group ref={groupRef} position={position as any}>
-      {/* Debug: Always show a test mesh */}
-      <mesh position={[0, 2, 0]} castShadow>
-        <boxGeometry args={[0.2, 0.2, 0.2]} />
-        <meshStandardMaterial color="#ff0000" />
+      {/* Debug: Always show a test mesh above avatar */}
+      <mesh position={[0, 3, 0]} castShadow>
+        <boxGeometry args={[0.1, 0.1, 0.1]} />
+        <meshStandardMaterial color="#00ff00" />
       </mesh>
       
-      {/* Body - DEBUG GLB RENDERING */}
+      {/* Body - GLB RENDERING */}
       {loadedBody ? (
-        <group>
-          <primitive 
-            object={loadedBody.clone()} 
-            scale={[10, 10, 10]} 
-            position={[0, 0, 0]}
-            rotation={[0, Math.PI, 0]}
-          />
-          {/* Debug wireframe to see GLB bounds */}
-          <mesh position={[0, 0, 0]} scale={[10, 10, 10]}>
-            <boxGeometry args={[1, 2, 0.5]} />
-            <meshBasicMaterial color="#ff00ff" wireframe={true} />
-          </mesh>
-        </group>
+        <primitive 
+          object={loadedBody.clone()} 
+          scale={[5, 5, 5]} 
+          position={[0, 0, 0]}
+          rotation={[0, Math.PI, 0]}
+        />
       ) : (
         <mesh castShadow>
           <capsuleGeometry args={[0.3, 0.6, 8, 16]} />
@@ -306,20 +299,28 @@ export function AvatarRoot({
         </mesh>
       )}
       
-      {/* Debug: Show primitive body anyway */}
-      <mesh position={[1, 0, 0]} castShadow>
-        <capsuleGeometry args={[0.3, 0.6, 8, 16]} />
-        <meshStandardMaterial color="#00ff00" />
-      </mesh>
-      {/* Head - TEMPORARILY DISABLED FOR TESTING */}
-      {false && loadedHead ? <primitive object={loadedHead.clone()} position={[0, 0.9, 0]} /> : (
+      {/* Head */}
+      {loadedHead ? (
+        <primitive 
+          object={loadedHead.clone()} 
+          position={[0, 0.9, 0]} 
+          scale={[5, 5, 5]}
+          rotation={[0, Math.PI, 0]}
+        />
+      ) : (
         <mesh position={[0, 0.9, 0]} castShadow>
           <sphereGeometry args={[0.25, 16, 16]} />
           <meshStandardMaterial color={secondary} />
         </mesh>
       )}
-      {/* Outfit - TEMPORARILY DISABLED FOR TESTING */}
-      {false && loadedOutfit ? <primitive object={loadedOutfit.clone()} /> : (
+      {/* Outfit */}
+      {loadedOutfit ? (
+        <primitive 
+          object={loadedOutfit.clone()} 
+          scale={[5, 5, 5]}
+          rotation={[0, Math.PI, 0]}
+        />
+      ) : (
         <mesh position={[0.35, 0.5, 0]} castShadow>
           <boxGeometry args={[0.2, 0.2, 0.2]} />
           <meshStandardMaterial color={secondary} />
