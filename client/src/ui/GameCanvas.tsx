@@ -9,6 +9,9 @@ import { Interactables } from './Interactables';
 import { TouchControls } from './TouchControls';
 import { Prompt } from './Prompt';
 import { AvatarPanel } from './AvatarPanel';
+import { WinOverlay } from './WinOverlay';
+import { useInventory } from '../game/inventory';
+import { getCoinTarget } from '../game/config';
 
 function Scene() {
   const net = useNet();
@@ -35,6 +38,8 @@ function Scene() {
 }
 
 export function GameCanvas() {
+  const inv = useInventory();
+  const won = inv.items.coin >= getCoinTarget();
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas shadows camera={{ position: [4, 3, 6], fov: 60 }}>
@@ -49,6 +54,7 @@ export function GameCanvas() {
       <HUD />
       <AvatarPanel />
       <TouchControls />
+      <WinOverlay visible={won} />
     </div>
   );
 }

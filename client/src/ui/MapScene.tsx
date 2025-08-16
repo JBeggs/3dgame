@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { generateDungeon } from '../gen/mapGen';
 import { getPhysics } from '../game/physics';
 import { Spider } from '../ai/spider';
@@ -82,18 +82,34 @@ export function MapScene() {
         <meshStandardMaterial color="#ffd54a" emissive="#3a2a00" emissiveIntensity={0.25} />
       </mesh>
     ))}
-    {/* Goal gate unlocks after collecting enough coins */}
-    {(() => {
-      const last = grid.rooms[grid.rooms.length - 1];
-      const enough = (inventory.get().items.coin) >= getCoinTarget();
-      return (
-        <mesh position={[ (last.cx + 0.5)*cellSize, 0.5, (last.cy + 0.5)*cellSize ] as any}>
-          <boxGeometry args={[1.2, 1.2, 0.2]} />
-          <meshStandardMaterial color={enough ? '#3b8' : '#a33'} />
-        </mesh>
-      );
-    })()}
+    {/* Goal gate unlocks after collecting enough coins; removes physics when unlocked */}
+    <GoalGate grid={grid} cellSize={cellSize} />
   </>;
+}
+
+function GoalGate({ grid, cellSize }: { grid: any; cellSize: number }) {
+  const gateBody = useRef<any>(null);
+  const phys = getPhysics();
+  const last = grid.rooms[grid.rooms.length - 1];
+  const pos: [number, number, number] = [ (last.cx + 0.5)*cellSize, 0.5, (last.cy + 0.5)*cellSize ];
+  const enough = (inventory.get().items.coin) >= getCoinTarget();
+
+  useEffect(() => {
+    if (!gateBody.current) {
+      gateBody.current = phys.addStaticBox(pos[0], pos[1], pos[2], 1.2, 1.2, 0.2);
+    }
+    if (enough && gateBody.current) {
+      phys.removeBody(gateBody.current);
+      gateBody.current = null;
+    }
+  }, [enough]);
+
+  return (
+    <mesh position={pos as any}>
+      <boxGeometry args={[1.2, 1.2, 0.2]} />
+      <meshStandardMaterial color={enough ? '#3b8' : '#a33'} />
+    </mesh>
+  );
 }
 
 
