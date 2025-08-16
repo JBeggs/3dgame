@@ -135,6 +135,7 @@ export function MapScene() {
     {/* Only show decorations and enemies if not in lobby mode */}
     {!useLobby && (
       <>
+        <Doorframes grid={grid} cellSize={cellSize} />
         <Decorations rooms={grid.rooms} cellSize={cellSize} seed={mapState.seed} />
         {/* Spawn smart spiders in lair rooms with difficulty scaling */}
     {grid.rooms.flatMap((r, roomIndex) => {
