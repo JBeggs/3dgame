@@ -4,6 +4,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { getInput } from './input';
 import { getPhysics } from './physics';
 import { connect } from '../net/net';
+import { AvatarRoot } from '../avatar/Avatar';
 
 export function usePlayerController() {
   const input = useMemo(() => getInput(), []);
@@ -55,12 +56,7 @@ export function PlayerMesh() {
     camera.lookAt(p.x, p.y + 0.5, p.z);
   });
 
-  return (
-    <mesh ref={ref} castShadow>
-      <capsuleGeometry args={[0.3, 0.6, 8, 16]} />
-      <meshStandardMaterial color="#e0d1ff" />
-    </mesh>
-  );
+  return <group ref={ref}><AvatarRoot /></group>;
 }
 
 

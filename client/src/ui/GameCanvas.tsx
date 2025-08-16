@@ -8,6 +8,7 @@ import { HUD } from './HUD';
 import { Interactables } from './Interactables';
 import { TouchControls } from './TouchControls';
 import { Prompt } from './Prompt';
+import { AvatarPanel } from './AvatarPanel';
 
 function Scene() {
   const net = useNet();
@@ -46,6 +47,7 @@ export function GameCanvas() {
         <StatsGl />
       </Canvas>
       <HUD />
+      <AvatarPanel />
       <TouchControls />
     </div>
   );
