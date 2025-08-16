@@ -31,7 +31,18 @@ wss.on('connection', (ws) => {
     rotation: 0,
     room: defaultRoom, 
     name: `Player${id}`,
-    joinTime: Date.now()
+    joinTime: Date.now(),
+    
+    // Server authority fields
+    health: 100,
+    maxHealth: 100,
+    lastPosUpdate: Date.now(),
+    lastCombatAction: 0,
+    speed: 0, // Current movement speed
+    
+    // Anti-cheat tracking
+    invalidMoveCount: 0,
+    lastKnownValidPos: { x: 0, y: 0, z: 0 }
   });
   
   // Update room count
@@ -51,23 +62,142 @@ wss.on('connection', (ws) => {
           } else if (msg.t === 'pos') {
         const c = clients.get(id);
         if (!c) return;
-        c.x = Number(msg.x)||0; c.y = Number(msg.y)||0; c.z = Number(msg.z)||0;
-        if (msg.rotation !== undefined) {
-          c.rotation = Number(msg.rotation)||0;
+        
+        // Server-side movement validation
+        const newPos = {
+          x: Number(msg.x) || 0,
+          y: Number(msg.y) || 0, 
+          z: Number(msg.z) || 0
+        };
+        const newRotation = msg.rotation !== undefined ? Number(msg.rotation) || 0 : c.rotation;
+        
+        const now = Date.now();
+        const deltaTime = (now - c.lastPosUpdate) / 1000; // Convert to seconds
+        c.lastPosUpdate = now;
+        
+        // Calculate movement distance and speed
+        const distance = Math.sqrt(
+          Math.pow(newPos.x - c.x, 2) + 
+          Math.pow(newPos.y - c.y, 2) + 
+          Math.pow(newPos.z - c.z, 2)
+        );
+        const speed = deltaTime > 0 ? distance / deltaTime : 0;
+        
+        // Movement validation
+        const MAX_SPEED = 12; // Maximum allowed speed (slightly above normal movement)
+        const MAX_Y_DIFF = 8; // Maximum Y change per update (jumping/falling)
+        const isValidMove = 
+          speed <= MAX_SPEED && 
+          Math.abs(newPos.y - c.y) <= MAX_Y_DIFF &&
+          deltaTime >= 0.01; // Minimum time between updates (100 FPS max)
+        
+        if (isValidMove) {
+          // Accept the movement
+          c.x = newPos.x;
+          c.y = newPos.y;
+          c.z = newPos.z;
+          c.rotation = newRotation;
+          c.speed = speed;
+          c.lastKnownValidPos = { x: newPos.x, y: newPos.y, z: newPos.z };
+          c.invalidMoveCount = Math.max(0, c.invalidMoveCount - 1); // Decay invalid count
+          
+          // Basic boundary validation (lobby is roughly 24x24)
+          const BOUNDARY = 15;
+          if (c.room === 'lobby') {
+            if (Math.abs(c.x) > BOUNDARY || Math.abs(c.z) > BOUNDARY) {
+              console.log(`[anticheat] Player ${id} hit boundary at ${c.x.toFixed(1)}, ${c.z.toFixed(1)}`);
+              // Clamp to boundary
+              c.x = Math.max(-BOUNDARY, Math.min(BOUNDARY, c.x));
+              c.z = Math.max(-BOUNDARY, Math.min(BOUNDARY, c.z));
+            }
+          }
+        } else {
+          // Reject the movement - use server authority
+          c.invalidMoveCount++;
+          console.log(`[anticheat] Player ${id} invalid move: speed=${speed.toFixed(1)} (max=${MAX_SPEED}), dt=${deltaTime.toFixed(3)}s, count=${c.invalidMoveCount}`);
+          
+          if (c.invalidMoveCount > 5) {
+            // Too many invalid moves - reset to last known good position
+            console.log(`[anticheat] Player ${id} position reset - too many invalid moves`);
+            c.x = c.lastKnownValidPos.x;
+            c.y = c.lastKnownValidPos.y; 
+            c.z = c.lastKnownValidPos.z;
+            c.invalidMoveCount = 0;
+            
+            // Send position correction to client
+            sendTo(id, { 
+              t: 'positionCorrection', 
+              x: c.x, 
+              y: c.y, 
+              z: c.z,
+              reason: 'Invalid movement detected'
+            });
+          }
         }
       } else if (msg.t === 'projectileCreate') {
         const c = clients.get(id);
         if (!c || !msg.projectile) return;
         
+        // Server-side projectile validation
+        const now = Date.now();
+        const timeSinceLastCombat = now - c.lastCombatAction;
+        const MIN_COMBAT_INTERVAL = 300; // Minimum 300ms between projectiles (anti-spam)
+        
+        // Rate limiting
+        if (timeSinceLastCombat < MIN_COMBAT_INTERVAL) {
+          console.log(`[anticheat] Player ${id} projectile spam blocked - ${timeSinceLastCombat}ms since last`);
+          sendTo(id, { 
+            t: 'combatError', 
+            reason: 'Rate limited',
+            cooldown: MIN_COMBAT_INTERVAL - timeSinceLastCombat
+          });
+          return;
+        }
+        
+        // Position validation - projectile must originate near player
+        const proj = msg.projectile;
+        const distance = Math.sqrt(
+          Math.pow(proj.x - c.x, 2) + 
+          Math.pow(proj.y - (c.y + 1.2), 2) + // Account for head height
+          Math.pow(proj.z - c.z, 2)
+        );
+        
+        if (distance > 3) {
+          console.log(`[anticheat] Player ${id} invalid projectile origin - distance ${distance.toFixed(1)}`);
+          sendTo(id, { 
+            t: 'combatError', 
+            reason: 'Invalid projectile origin'
+          });
+          return;
+        }
+        
+        // Velocity validation - prevent unrealistic projectile speeds
+        const velocity = Math.sqrt(proj.vx * proj.vx + proj.vy * proj.vy + proj.vz * proj.vz);
+        const MAX_PROJECTILE_SPEED = 20; // Maximum projectile velocity
+        
+        if (velocity > MAX_PROJECTILE_SPEED) {
+          console.log(`[anticheat] Player ${id} invalid projectile speed - ${velocity.toFixed(1)}`);
+          sendTo(id, { 
+            t: 'combatError', 
+            reason: 'Invalid projectile velocity'
+          });
+          return;
+        }
+        
+        // Accept the projectile
+        c.lastCombatAction = now;
+        
         const projectile = {
           ...msg.projectile,
           playerId: id,
           room: c.room,
-          createdAt: Date.now()
+          createdAt: now,
+          // Server adds authoritative data
+          validated: true
         };
         
         projectiles.set(msg.projectile.id, projectile);
-        console.log(`[projectile] Player ${id} created ${msg.projectile.type} projectile ${msg.projectile.id}`);
+        console.log(`[combat] Player ${id} fired ${msg.projectile.type} projectile ${msg.projectile.id} (speed: ${velocity.toFixed(1)})`);
         
         // Broadcast to all players in the same room
         broadcastToRoom(c.room, { 
@@ -221,13 +351,98 @@ wss.on('connection', (ws) => {
   });
 });
 
+// Server-side projectile and game state update loop
 setInterval(() => {
-  // broadcast players and projectiles snapshot per room at 10Hz
+  const deltaTime = 0.1; // 100ms update interval
+  const now = Date.now();
+  
+  // Update server-side projectiles
+  for (const [projId, proj] of projectiles) {
+    proj.lifetime += deltaTime;
+    
+    // Move projectile
+    proj.x += proj.vx * deltaTime;
+    proj.y += proj.vy * deltaTime;
+    proj.z += proj.vz * deltaTime;
+    
+    // Check if projectile expired
+    if (proj.lifetime >= proj.maxLifetime) {
+      projectiles.delete(projId);
+      broadcastToRoom(proj.room, { t: 'projectileDestroyed', id: projId });
+      continue;
+    }
+    
+    // Server-side hit detection against players
+    const playersInRoom = [...clients.values()].filter(c => c.room === proj.room && c.ws.id !== proj.playerId);
+    
+    for (const target of playersInRoom) {
+      const hitDistance = Math.sqrt(
+        Math.pow(proj.x - target.x, 2) + 
+        Math.pow(proj.y - (target.y + 1), 2) + // Center mass hit
+        Math.pow(proj.z - target.z, 2)
+      );
+      
+      // Hit detection (0.8 unit hit radius)
+      if (hitDistance < 0.8) {
+        // Projectile hit a player!
+        const damage = proj.damage;
+        target.health = Math.max(0, target.health - damage);
+        
+        console.log(`[combat] Projectile ${projId} hit player ${target.ws.id} for ${damage} damage (health: ${target.health}/${target.maxHealth})`);
+        
+        // Notify the hit player about damage
+        sendTo(target.ws.id, { 
+          t: 'playerDamaged', 
+          damage, 
+          health: target.health,
+          maxHealth: target.maxHealth,
+          source: proj.playerId,
+          projectileType: proj.type
+        });
+        
+        // Notify the shooter about the hit
+        sendTo(proj.playerId, { 
+          t: 'projectileHit', 
+          targetId: target.ws.id,
+          damage,
+          projectileId: projId
+        });
+        
+        // Broadcast hit effect to all players in room
+        broadcastToRoom(proj.room, { 
+          t: 'hitEffect', 
+          x: proj.x, 
+          y: proj.y, 
+          z: proj.z,
+          playerId: target.ws.id,
+          damage,
+          type: proj.type
+        });
+        
+        // Remove projectile after hit (unless it's ricochet and has bounces)
+        if (proj.type !== 'ricochet' || !proj.bounces || proj.bounces <= 0) {
+          projectiles.delete(projId);
+          broadcastToRoom(proj.room, { t: 'projectileDestroyed', id: projId });
+        }
+        break; // One hit per projectile per update
+      }
+    }
+  }
+  
+  // Broadcast players and projectiles snapshot per room at 10Hz
   for (const [id, c] of clients) {
-    // Player list
+    // Player list with health
     const playerList = [...clients.entries()]
       .filter(([pid, cc]) => cc.room === c.room)
-      .map(([pid, cc]) => ({ id: pid, x: cc.x, y: cc.y, z: cc.z, rotation: cc.rotation }));
+      .map(([pid, cc]) => ({ 
+        id: pid, 
+        x: cc.x, 
+        y: cc.y, 
+        z: cc.z, 
+        rotation: cc.rotation,
+        health: cc.health,
+        maxHealth: cc.maxHealth
+      }));
     sendTo(id, { t: 'players', list: playerList });
     
     // Projectile list for the same room

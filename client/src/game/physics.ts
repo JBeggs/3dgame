@@ -7,6 +7,7 @@ export type PhysicsAPI = {
   addStaticBox: (x: number, y: number, z: number, sx: number, sy: number, sz: number) => CANNON.Body;
   removeBody: (body: CANNON.Body) => void;
   isGrounded: () => boolean;
+  correctPosition: (x: number, y: number, z: number) => void;
 };
 
 let singleton: PhysicsAPI | null = null;
@@ -59,8 +60,32 @@ export function getPhysics(): PhysicsAPI {
     // Up-facing normal implies ground-like surface
     return result.hitNormalWorld.y > 0.5;
   }
+  
+  // Server position correction method
+  function correctPosition(x: number, y: number, z: number) {
+    console.log(`🔧 Correcting position: ${playerBody.position.x.toFixed(1)}, ${playerBody.position.y.toFixed(1)}, ${playerBody.position.z.toFixed(1)} -> ${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`);
+    
+    // Apply server-authoritative position
+    playerBody.position.set(x, y, z);
+    
+    // Reset velocity to prevent jarring movement
+    playerBody.velocity.set(0, 0, 0);
+    playerBody.angularVelocity.set(0, 0, 0);
+    
+    console.log('✅ Position corrected by server authority');
+  }
 
-  singleton = { world, playerBody, step, addStaticBox, removeBody, isGrounded };
+  singleton = { world, playerBody, step, addStaticBox, removeBody, isGrounded, correctPosition };
+  
+  // Listen for server position corrections (only set up once)
+  if (typeof window !== 'undefined') {
+    window.addEventListener('serverPositionCorrection', (event: any) => {
+      const { x, y, z, reason } = event.detail;
+      console.log(`🚨 Server position correction: ${reason}`);
+      correctPosition(x, y, z);
+    });
+  }
+  
   return singleton;
 }
 

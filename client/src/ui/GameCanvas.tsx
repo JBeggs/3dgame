@@ -22,6 +22,7 @@ import { getPhysics } from '../game/physics';
 import { LobbyPanel } from './LobbyPanel';
 import { AvatarRoot } from '../avatar/Avatar';
 import { RemoteProjectileRenderer } from './RemoteProjectileRenderer';
+import { CombatFeedback } from './CombatFeedback';
 
 
 function Scene() {
@@ -153,6 +154,9 @@ export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: bo
       {/* {showConfigPanels ? <MapControlsPanel /> : null} */}
       {/* <MiniMap /> */}
       {/* <WinOverlay visible={won} /> */}
+      
+      {/* Combat feedback */}
+      <CombatFeedback />
       
       {/* Simple lobby mode toggle */}
       <div style={{

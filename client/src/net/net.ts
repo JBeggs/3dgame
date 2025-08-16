@@ -272,6 +272,64 @@ export function connect(): NetAPI {
             emit();
           }
           break;
+        case 'positionCorrection':
+          // Server rejected our position - accept the correction
+          console.log('🚫 Position corrected by server:', msg.reason);
+          console.log(`📍 New position: ${msg.x.toFixed(1)}, ${msg.y.toFixed(1)}, ${msg.z.toFixed(1)}`);
+          // The physics system should handle this by updating player body position
+          window.dispatchEvent(new CustomEvent('serverPositionCorrection', { 
+            detail: { x: msg.x, y: msg.y, z: msg.z, reason: msg.reason }
+          }));
+          break;
+        case 'combatError':
+          // Server rejected our combat action
+          console.log('🚫 Combat action rejected:', msg.reason);
+          if (msg.cooldown) {
+            console.log(`⏱️ Cooldown remaining: ${msg.cooldown}ms`);
+          }
+          // Show error to user
+          window.dispatchEvent(new CustomEvent('combatError', {
+            detail: { reason: msg.reason, cooldown: msg.cooldown }
+          }));
+          break;
+        case 'playerDamaged':
+          // We took damage from server authority
+          console.log(`💔 Took ${msg.damage} damage from player ${msg.source} (${msg.health}/${msg.maxHealth})`);
+          // Update local health state
+          window.dispatchEvent(new CustomEvent('playerDamaged', {
+            detail: { 
+              damage: msg.damage, 
+              health: msg.health, 
+              maxHealth: msg.maxHealth, 
+              source: msg.source,
+              projectileType: msg.projectileType 
+            }
+          }));
+          break;
+        case 'projectileHit':
+          // Our projectile hit someone
+          console.log(`🎯 Hit player ${msg.targetId} for ${msg.damage} damage!`);
+          // Play hit sound or show hit indicator
+          window.dispatchEvent(new CustomEvent('projectileHit', {
+            detail: { 
+              targetId: msg.targetId, 
+              damage: msg.damage, 
+              projectileId: msg.projectileId 
+            }
+          }));
+          break;
+        case 'hitEffect':
+          // Someone got hit - show visual effect
+          console.log(`💥 Hit effect at ${msg.x.toFixed(1)}, ${msg.y.toFixed(1)}, ${msg.z.toFixed(1)}`);
+          window.dispatchEvent(new CustomEvent('hitEffect', {
+            detail: {
+              x: msg.x, y: msg.y, z: msg.z,
+              playerId: msg.playerId,
+              damage: msg.damage,
+              type: msg.type
+            }
+          }));
+          break;
       }
     } catch {}
   });
