@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useInventory } from '../game/inventory';
 import { usePlayerHealth } from '../game/health';
+import { getCoinTarget } from '../game/config';
 
 export function HUD() {
   const inv = useInventory();
@@ -9,7 +10,7 @@ export function HUD() {
   return (
     <div style={{ position: 'absolute', top: 10, left: 10, color: '#fff', fontFamily: 'monospace' }}>
       <div>HP: {Math.round(hp.hp)} / {hp.max}</div>
-      <div>Keys: {inv.items.key} | Coins: {inv.items.coin}</div>
+      <div>Keys: {inv.items.key} | Coins: {inv.items.coin}/{getCoinTarget()}</div>
       {msg && <div>{msg}</div>}
     </div>
   );

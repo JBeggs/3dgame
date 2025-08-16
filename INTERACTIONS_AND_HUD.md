@@ -14,7 +14,7 @@ cd client && npm run dev
 
 Next extensions
 - Door interaction to remove physics blocker upon unlock.
-- Coin pickups scattered by the generator.
+- Coin pickups now placed per room by the generator; HUD shows target count from config.
 - Prompts (E/ tap) rather than clicks; controller/gamepad input.
 
 

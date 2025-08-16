@@ -3,23 +3,17 @@ import { generateDungeon } from '../gen/mapGen';
 import { getPhysics } from '../game/physics';
 import { Spider } from '../ai/spider';
 import { inventory } from '../game/inventory';
+import { getCoinTarget } from '../game/config';
 
 export function MapScene() {
   const grid = useMemo(() => generateDungeon(1, 48, 36, 10), []);
   const cellSize = 1.2; // expand grid scale a bit for wider corridors
-  // Seeded coin placement for stability
+  // Coins: one at many room centers; deterministic IDs
   const coins = useMemo(() => {
     const out: { x: number; y: number; z: number; id: number }[] = [];
-    let seed = 123456;
-    function rng() { seed = (seed * 1664525 + 1013904223) >>> 0; return (seed & 0xfffffff) / 0xfffffff; }
     let id = 0;
-    for (let y = 1; y < grid.h - 1; y++) {
-      for (let x = 1; x < grid.w - 1; x++) {
-        const i = y * grid.w + x;
-        if (grid.cells[i] === 0 && rng() < 0.04) {
-          out.push({ x: (x + 0.5) * cellSize, y: 0.4, z: (y + 0.5) * cellSize, id: id++ });
-        }
-      }
+    for (const r of grid.rooms) {
+      out.push({ x: (r.cx + 0.5) * cellSize, y: 0.4, z: (r.cy + 0.5) * cellSize, id: id++ });
     }
     return out;
   }, [grid]);
@@ -80,13 +74,25 @@ export function MapScene() {
   }
   return <>
     {meshes}
-    <Spider />
+    {/* Spawn a spider in every third room */}
+    {grid.rooms.map((r, i) => (i % 3 === 0) && <Spider key={`sp-${i}`} position={[ (r.cx + 0.5)*cellSize, 0.3, (r.cy + 0.5)*cellSize ] as any} />)}
     {coins.map(c => !collected.has(c.id) && (
       <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]} onClick={() => { inventory.add('coin', 1); setCollected(new Set(collected).add(c.id)); }}>
         <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />
         <meshStandardMaterial color="#ffd54a" emissive="#3a2a00" emissiveIntensity={0.25} />
       </mesh>
     ))}
+    {/* Goal gate unlocks after collecting enough coins */}
+    {(() => {
+      const last = grid.rooms[grid.rooms.length - 1];
+      const enough = (inventory.get().items.coin) >= getCoinTarget();
+      return (
+        <mesh position={[ (last.cx + 0.5)*cellSize, 0.5, (last.cy + 0.5)*cellSize ] as any}>
+          <boxGeometry args={[1.2, 1.2, 0.2]} />
+          <meshStandardMaterial color={enough ? '#3b8' : '#a33'} />
+        </mesh>
+      );
+    })()}
   </>;
 }
 
