@@ -47,7 +47,16 @@ wss.on('connection', (ws) => {
     // Client prediction support
     lastInputSequence: 0,
     inputBuffer: [], // Store recent inputs for reconciliation
-    velocity: { x: 0, y: 0, z: 0 }
+    velocity: { x: 0, y: 0, z: 0 },
+    
+    // Avatar customization
+    avatarConfig: {
+      bodyId: 'bodyA',
+      headId: 'headA', 
+      outfitId: 'robeA',
+      colors: { primary: '#a0c8ff', secondary: '#4a3070', accent: '#ff6b6b', accessory: '#ffd93d' },
+      accessories: {}
+    }
   });
   
   // Update room count
@@ -275,6 +284,20 @@ wss.on('connection', (ws) => {
         });
         
         console.log(`[prediction] Processed input ${input.sequenceNumber} for player ${id} -> (${c.x.toFixed(1)}, ${c.y.toFixed(1)}, ${c.z.toFixed(1)})`);
+      } else if (msg.t === 'avatarUpdate') {
+        const c = clients.get(id);
+        if (!c || !msg.config) return;
+        
+        // Update player's avatar configuration
+        c.avatarConfig = { ...c.avatarConfig, ...msg.config };
+        console.log(`[avatar] Player ${id} updated avatar config:`, c.avatarConfig);
+        
+        // Broadcast avatar update to all other players in the room
+        broadcastToRoom(c.room, {
+          t: 'avatarUpdate',
+          playerId: id,
+          config: c.avatarConfig
+        });
       } else if (msg.t === 'projectileDestroy') {
         const c = clients.get(id);
         if (!c || !msg.id) return;

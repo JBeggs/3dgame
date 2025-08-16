@@ -32,6 +32,7 @@ type Store = {
   currentRoom: string;
   players: Map<number, PlayerSnapshot>;
   playersPrev: Map<number, PlayerSnapshot>;
+  playerAvatars: Map<number, any>; // Avatar configurations by player ID
   tPrev: number;
   tCurr: number;
   selfPos: { x: number; y: number; z: number } | null;
@@ -52,6 +53,7 @@ const store: Store = {
   currentRoom: 'lobby',
   players: new Map(),
   playersPrev: new Map(),
+  playerAvatars: new Map(),
   tPrev: 0,
   tCurr: 0,
   selfPos: null,
@@ -76,6 +78,7 @@ export type NetAPI = {
   sendInputCommand: (input: any) => void;
   sendProjectileCreate: (projectile: Omit<ProjectileSnapshot, 'playerId'>) => void;
   sendProjectileDestroy: (projectileId: string) => void;
+  sendAvatarConfig: (config: any) => void;
   joinRoom: (room: string) => void;
   setPlayerName: (name: string) => void;
   getRooms: () => void;
@@ -331,6 +334,14 @@ export function connect(): NetAPI {
             }
           }));
           break;
+        case 'avatarUpdate':
+          // Another player updated their avatar
+          if (msg.playerId && msg.config) {
+            store.playerAvatars.set(msg.playerId, msg.config);
+            console.log(`👗 Player ${msg.playerId} avatar updated:`, msg.config);
+            emit();
+          }
+          break;
         case 'inputAck':
           // Server acknowledged our input command - use for reconciliation
           if (msg.sequenceNumber && msg.position) {
@@ -413,6 +424,14 @@ const api: NetAPI = {
     ws.send(JSON.stringify({ 
       t: 'projectileDestroy', 
       id: projectileId 
+    }));
+  },
+  sendAvatarConfig(config: any) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    console.log('👗 Sending avatar config:', config);
+    ws.send(JSON.stringify({ 
+      t: 'avatarUpdate', 
+      config 
     }));
   },
   joinRoom(room: string) {

@@ -68,6 +68,16 @@ export const avatarStore = {
     };
     save(state.cfg);
     subs.forEach((f) => f());
+    
+    // Send avatar update to network for multiplayer sync
+    try {
+      import('../net/net').then(({ connect }) => {
+        const net = connect();
+        net.sendAvatarConfig(state.cfg);
+      });
+    } catch (error) {
+      console.log('Avatar sync skipped - network not available');
+    }
   },
   setAccessory(slot: AccessorySlot, id: string | undefined) {
     const accessories = { ...state.cfg.accessories };

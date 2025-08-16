@@ -20,9 +20,10 @@ import { useEffect } from 'react';
 import { Nameplate, idToColor } from './Nameplate';
 import { getPhysics } from '../game/physics';
 import { LobbyPanel } from './LobbyPanel';
-import { AvatarRoot } from '../avatar/Avatar';
+import { AvatarRoot, NetworkedAvatarRoot } from '../avatar/Avatar';
 import { RemoteProjectileRenderer } from './RemoteProjectileRenderer';
 import { CombatFeedback } from './CombatFeedback';
+import { AvatarDressUpPanel } from './AvatarDressUpPanel';
 
 
 function Scene() {
@@ -89,8 +90,11 @@ function Scene() {
         
         return (
           <group key={p.id} position={[ix, iy, iz]}>
-            {/* Player avatar with proper rotation */}
-            <AvatarRoot rotation={rotation} />
+            {/* Player avatar with proper rotation and networked config */}
+            <NetworkedAvatarRoot 
+              rotation={rotation}
+              config={net.playerAvatars.get(p.id)}
+            />
             
             {/* Enhanced nameplate */}
             <Nameplate 
@@ -157,6 +161,9 @@ export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: bo
       
       {/* Combat feedback */}
       <CombatFeedback />
+      
+      {/* Avatar dress-up system */}
+      <AvatarDressUpPanel />
       
       {/* Simple lobby mode toggle */}
       <div style={{
