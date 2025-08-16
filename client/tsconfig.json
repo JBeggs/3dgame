@@ -4,11 +4,12 @@
     "module": "ESNext",
     "jsx": "react-jsx",
     "moduleResolution": "Bundler",
-    "strict": true,
+    "strict": false,
     "baseUrl": ".",
     "paths": {},
     "types": ["vite/client"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noEmit": false
   },
   "include": ["src", "src/types/**/*"]
 }

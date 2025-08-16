@@ -285,21 +285,28 @@ export function AvatarRoot({
       </mesh>
       
       {/* Body */}
-      {loadedBody ? <primitive object={loadedBody.clone()} /> : (
+      {loadedBody ? (
+        <primitive 
+          object={loadedBody.clone()} 
+          scale={[2, 2, 2]} 
+          position={[0, 0, 0]}
+          rotation={[0, 0, 0]}
+        />
+      ) : (
         <mesh castShadow>
           <capsuleGeometry args={[0.3, 0.6, 8, 16]} />
           <meshStandardMaterial color={primary} />
         </mesh>
       )}
-      {/* Head */}
-      {loadedHead ? <primitive object={loadedHead.clone()} position={[0, 0.9, 0]} /> : (
+      {/* Head - TEMPORARILY DISABLED FOR TESTING */}
+      {false && loadedHead ? <primitive object={loadedHead.clone()} position={[0, 0.9, 0]} /> : (
         <mesh position={[0, 0.9, 0]} castShadow>
           <sphereGeometry args={[0.25, 16, 16]} />
           <meshStandardMaterial color={secondary} />
         </mesh>
       )}
-      {/* Outfit */}
-      {loadedOutfit ? <primitive object={loadedOutfit.clone()} /> : (
+      {/* Outfit - TEMPORARILY DISABLED FOR TESTING */}
+      {false && loadedOutfit ? <primitive object={loadedOutfit.clone()} /> : (
         <mesh position={[0.35, 0.5, 0]} castShadow>
           <boxGeometry args={[0.2, 0.2, 0.2]} />
           <meshStandardMaterial color={secondary} />
