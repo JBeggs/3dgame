@@ -7,6 +7,7 @@ import { playerHealth } from '../game/health';
 import { getGrid } from '../game/worldState';
 import { getAudio } from '../game/audio';
 import { getParticleManager } from '../effects/ParticleSystem';
+import { InstancedProjectiles } from './InstancedMeshes';
 
 export function ProjectileRenderer() {
   const projectileManager = getProjectileManager();
@@ -47,54 +48,20 @@ export function ProjectileRenderer() {
     setProjectiles([...projectileManager.getAllProjectiles()]);
   });
 
-  return (
-    <group>
-      {projectiles.map((projectile) => (
-        <ProjectileMesh key={projectile.id} projectile={projectile} />
-      ))}
-    </group>
-  );
-}
-
-function ProjectileMesh({ projectile }: { projectile: Projectile }) {
-  const meshRef = useRef<THREE.Mesh>(null!);
-  const projectileManager = getProjectileManager();
-  const visualData = projectileManager.getProjectileVisualData(projectile);
-
-  useEffect(() => {
-    if (meshRef.current) {
-      meshRef.current.position.copy(projectile.position);
-      
-      // Orient arrow projectiles in direction of travel
-      if (projectile.type === 'arrow' && projectile.velocity.length() > 0) {
-        const direction = projectile.velocity.clone().normalize();
-        meshRef.current.lookAt(
-          meshRef.current.position.clone().add(direction)
-        );
-        // Rotate 90 degrees so the cylinder points forward
-        meshRef.current.rotateX(Math.PI / 2);
-      }
-    }
-  }, [projectile.position, projectile.velocity, projectile.type]);
-
-  useFrame(() => {
-    if (meshRef.current) {
-      meshRef.current.position.copy(projectile.position);
-    }
+  // Convert projectiles to instanced format
+  const instancedProjectileData = projectiles.map(projectile => {
+    const visualData = projectileManager.getProjectileVisualData(projectile);
+    
+    return {
+      position: [projectile.position.x, projectile.position.y, projectile.position.z] as [number, number, number],
+      rotation: [0, 0, 0] as [number, number, number], // Could add rotation based on velocity
+      scale: visualData.scale,
+      color: visualData.color,
+      emissive: visualData.emissive,
+      emissiveIntensity: visualData.emissiveIntensity,
+      type: `${projectile.type}-${projectile.ownerId || 'enemy'}`
+    };
   });
 
-  const geometry = visualData.geometry === 'cylinder' 
-    ? <cylinderGeometry args={[visualData.scale[0], visualData.scale[1], visualData.scale[2], 8]} />
-    : <sphereGeometry args={[visualData.scale[0], 8, 8]} />;
-
-  return (
-    <mesh ref={meshRef} scale={visualData.scale}>
-      {geometry}
-      <meshStandardMaterial 
-        color={visualData.color}
-        emissive={visualData.emissive}
-        emissiveIntensity={visualData.emissiveIntensity}
-      />
-    </mesh>
-  );
+  return <InstancedProjectiles projectiles={instancedProjectileData} />;
 }
