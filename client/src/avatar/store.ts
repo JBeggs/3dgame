@@ -40,6 +40,10 @@ export const avatarStore = {
     save(state.cfg);
     subs.forEach((f) => f());
   },
+  presets: {
+    presetA: { bodyId: 'bodyA', headId: 'headA', outfitId: 'robeA', colors: { primary: '#a0c8ff', secondary: '#4a3070' } } as AvatarConfig,
+    presetB: { bodyId: 'bodyB', headId: 'headB', outfitId: 'robeB', colors: { primary: '#ffd54a', secondary: '#332255' } } as AvatarConfig,
+  },
 };
 
 export function useAvatar() {

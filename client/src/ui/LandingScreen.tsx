@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MapControlsPanel } from './MapControlsPanel';
 import { AvatarPanel } from './AvatarPanel';
+import { avatarStore } from '../avatar/store';
 
 export function LandingScreen({ onStart }: { onStart: () => void }) {
   const [showAvatar, setShowAvatar] = useState(true);
@@ -13,6 +14,17 @@ export function LandingScreen({ onStart }: { onStart: () => void }) {
           <div style={{ flex: 1 }}>
             <label><input type="checkbox" checked={showAvatar} onChange={(e) => setShowAvatar(e.target.checked)} /> Avatar</label>
             {showAvatar && <div style={{ position: 'relative', zIndex: 21 }}><AvatarPanel /></div>}
+            <div style={{ marginTop: 8 }}>
+              <label>Preset:
+                <select onChange={(e) => {
+                  const p = e.target.value === 'B' ? avatarStore.presets.presetB : avatarStore.presets.presetA;
+                  avatarStore.set(p);
+                }}>
+                  <option value="A">Preset A</option>
+                  <option value="B">Preset B</option>
+                </select>
+              </label>
+            </div>
           </div>
           <div style={{ flex: 1 }}>
             <label><input type="checkbox" checked={showMap} onChange={(e) => setShowMap(e.target.checked)} /> Map</label>

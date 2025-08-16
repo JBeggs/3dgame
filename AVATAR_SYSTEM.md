@@ -29,7 +29,7 @@ Checklist to verify
 - [ ] For cache issues during swaps, call `clearAvatarCache()` after updating files (dev only)
 
 Open for development (TODO)
-- [ ] Provide sample GLBs (tiny) and presets (A/B) for body/head/outfit
+- [x] Provide presets (A/B) wired to landing screen; GLBs can be dropped into assets/avatar
 - [ ] Add jump/land animation hooks and crossfade tuning
 - [ ] Accessory slots (hat/cape) with color tints
 
