@@ -1,0 +1,38 @@
+import React, { Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, StatsGl } from '@react-three/drei';
+
+function Scene() {
+  return (
+    <>
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[3, 5, 2]} intensity={1.0} />
+      <mesh castShadow receiveShadow position={[0, 0.5, 0]}
+        onPointerDown={(e) => console.log('mesh click', e.point)}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#4aa3ff" />
+      </mesh>
+      <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+        <planeGeometry args={[20, 20]} />
+        <meshStandardMaterial color="#2a2f39" />
+      </mesh>
+      <gridHelper args={[20, 20, '#444', '#333']} />
+    </>
+  );
+}
+
+export function GameCanvas() {
+  return (
+    <Canvas shadows camera={{ position: [4, 3, 6], fov: 60 }}>
+      <color attach="background" args={[0.06, 0.07, 0.1]} />
+      <Suspense fallback={null}>
+        <Scene />
+      </Suspense>
+      <OrbitControls makeDefault enableDamping />
+      {/* Dev stats only; tree-shaken out in prod builds */}
+      <StatsGl />
+    </Canvas>
+  );
+}
+
+

@@ -6,6 +6,11 @@ node_modules/
 dist/
 build/
 .vite/
+.turbo/
+.eslintcache
+client/node_modules/
+server/node_modules/
+client/dist/
 .parcel-cache/
 .cache/
 
