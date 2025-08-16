@@ -103,10 +103,8 @@ export function connect(): NetAPI {
           store.playersPrev = store.players;
           const m = new Map<number, PlayerSnapshot>();
           
-          // Debug occasionally
-          if (Math.random() < 0.01) {
-            console.log(`👥 Players update - Total: ${(msg.list as PlayerSnapshot[]).length}, Room: ${store.currentRoom}`);
-          }
+          console.log(`👥 LIVE: ${(msg.list as PlayerSnapshot[]).length} players in ${store.currentRoom}:`, 
+            (msg.list as PlayerSnapshot[]).map(p => `${p.id}${p.id === store.selfId ? '(me)' : ''}: ${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`));
           
           for (const p of msg.list as PlayerSnapshot[]) {
             m.set(p.id, p);
