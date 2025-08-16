@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { generateBSP } from '../gen/mapGen';
+import { generateDungeon } from '../gen/mapGen';
 import { getPhysics } from '../game/physics';
 import { Spider } from '../ai/spider';
 import { inventory } from '../game/inventory';
 
 export function MapScene() {
-  const grid = useMemo(() => generateBSP(1, 36, 36), []);
+  const grid = useMemo(() => generateDungeon(1, 48, 36, 10), []);
   const cellSize = 1.2; // expand grid scale a bit for wider corridors
   // Seeded coin placement for stability
   const coins = useMemo(() => {

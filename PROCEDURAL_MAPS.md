@@ -1,7 +1,7 @@
 ### Procedural Map Generator (Skeleton)
 
 What was added
-- `client/src/gen/mapGen.ts`: tiny BSP-style generator returning a grid (0 floor, 1 wall).
+- `client/src/gen/mapGen.ts`: upgraded to a small dungeon generator: non-overlapping rooms, corridors via nearest-neighbor connections, plus extra links for loops; widened corridors.
 - `client/src/ui/MapScene.tsx`: renders grid as boxes and builds matching static physics walls.
 - Physics upgraded to a singleton with `addStaticBox()` so the map can register colliders.
 - Integrated into scene in `GameCanvas`.
@@ -13,7 +13,7 @@ How to try
 ```
 cd client && npm run dev
 ```
-- A simple two-room layout with a corridor appears. Player collides with walls.
+- A multi-room dungeon with corridors and a few loops appears. Player collides with walls.
 
 Next extensions
 - Real BSP recursion, variable room sizes, loops, props pass.
