@@ -27,6 +27,7 @@ export function PlayerMesh() {
   const net = useMemo(() => connect(), []);
   const netState = useNet();
   const combat = useMemo(() => getPlayerCombat(), []);
+  const avatarRotationRef = useRef(0);
 
   useFrame((_, dt) => {
     const { playerBody } = physics;
@@ -71,6 +72,12 @@ export function PlayerMesh() {
     // Update combat system
     updatePlayerCombat();
     
+    // Update avatar rotation based on movement
+    const movementSpeed = Math.hypot(playerBody.velocity.x, playerBody.velocity.z);
+    if (movementSpeed > 0.1) {
+      avatarRotationRef.current = Math.atan2(playerBody.velocity.x, playerBody.velocity.z);
+    }
+    
     physics.step(dt);
     // send network position (throttled inside net api)
     net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z);
@@ -106,7 +113,7 @@ export function PlayerMesh() {
 
   return (
     <group ref={ref}>
-      <AvatarRoot />
+      <AvatarRoot rotation={avatarRotationRef.current} />
     </group>
   );
 }

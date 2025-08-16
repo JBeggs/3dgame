@@ -4,7 +4,8 @@ import { useAvatar } from './store';
 
 // Simple humanoid avatar using basic shapes - no more fox!
 export function AvatarRoot({ 
-  position = [0, 0, 0] as [number, number, number]
+  position = [0, 0, 0] as [number, number, number],
+  rotation = 0 // Y-axis rotation in radians
 }) {
   const cfg = useAvatar();
   const primary = new THREE.Color(cfg.colors.primary);
@@ -27,7 +28,7 @@ export function AvatarRoot({
   // REMOVED ANIMATION FRAME UPDATES - using simple shapes now
 
   return (
-    <group position={position as any}>
+    <group position={position as any} rotation={[0, rotation, 0]}>
       {/* PROPER HUMANOID AVATAR - NO MORE FOX! */}
       
       {/* Head */}
