@@ -79,7 +79,7 @@ export function MapScene() {
   return <>
     <InstancedWalls positions={wallPositions} size={cellSize} />
     {/* Spawn a spider in every third room */}
-    {grid.rooms.map((r, i) => (i % 3 === 0) && <Spider key={`sp-${i}`} position={[ (r.cx + 0.5)*cellSize, 0.3, (r.cy + 0.5)*cellSize ] as any} />)}
+    {grid.rooms.map((r, i) => (r.tag === 'lair') && <Spider key={`sp-${i}`} position={[ (r.cx + 0.5)*cellSize, 0.3, (r.cy + 0.5)*cellSize ] as any} />)}
     {coins.map(c => !collected.has(c.id) && (
       <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]}>
         <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />

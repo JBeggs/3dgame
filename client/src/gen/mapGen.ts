@@ -1,5 +1,6 @@
 export type Cell = 0 | 1; // 0 floor, 1 wall
-export type Room = { x: number; y: number; w: number; h: number; cx: number; cy: number };
+export type RoomTag = 'start' | 'treasure' | 'lair' | 'normal';
+export type Room = { x: number; y: number; w: number; h: number; cx: number; cy: number; tag: RoomTag };
 export type Grid = { w: number; h: number; cells: Uint8Array; rooms: Room[] };
 
 export function generateDungeon(seed = 1, w = 48, h = 36, roomTarget = 10): Grid {
@@ -20,7 +21,7 @@ export function generateDungeon(seed = 1, w = 48, h = 36, roomTarget = 10): Grid
     const rh = Math.floor(4 + rnd() * 8);
     const x = Math.floor(1 + rnd() * (w - rw - 2));
     const y = Math.floor(1 + rnd() * (h - rh - 2));
-    const cand: Room = { x, y, w: rw, h: rh, cx: Math.floor(x + rw / 2), cy: Math.floor(y + rh / 2) };
+    const cand: Room = { x, y, w: rw, h: rh, cx: Math.floor(x + rw / 2), cy: Math.floor(y + rh / 2), tag: 'normal' };
     if (rooms.some(r => rectsOverlap(r, cand))) continue;
     rooms.push(cand);
     carveRoom(x, y, rw, rh);
@@ -72,6 +73,23 @@ export function generateDungeon(seed = 1, w = 48, h = 36, roomTarget = 10): Grid
       if (cells[y * w + x] === 0) {
         widened[(y - 1) * w + x] = 0; widened[(y + 1) * w + x] = 0; widened[y * w + (x - 1)] = 0; widened[y * w + (x + 1)] = 0;
       }
+    }
+  }
+
+  // Tag rooms: pick start near center, treasure farthest; a few lairs
+  if (rooms.length > 0) {
+    const cx = Math.floor(w / 2), cy = Math.floor(h / 2);
+    let startIdx = 0, treasureIdx = 0, bestNear = Infinity, bestFar = -Infinity;
+    for (let i = 0; i < rooms.length; i++) {
+      const r = rooms[i];
+      const d = (r.cx - cx) ** 2 + (r.cy - cy) ** 2;
+      if (d < bestNear) { bestNear = d; startIdx = i; }
+      if (d > bestFar) { bestFar = d; treasureIdx = i; }
+    }
+    rooms[startIdx].tag = 'start';
+    rooms[treasureIdx].tag = 'treasure';
+    for (let i = 0; i < rooms.length; i++) {
+      if (i !== startIdx && i !== treasureIdx && Math.random() < 0.25) rooms[i].tag = 'lair';
     }
   }
 
