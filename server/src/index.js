@@ -42,7 +42,12 @@ wss.on('connection', (ws) => {
     
     // Anti-cheat tracking
     invalidMoveCount: 0,
-    lastKnownValidPos: { x: 0, y: 0, z: 0 }
+    lastKnownValidPos: { x: 0, y: 0, z: 0 },
+    
+    // Client prediction support
+    lastInputSequence: 0,
+    inputBuffer: [], // Store recent inputs for reconciliation
+    velocity: { x: 0, y: 0, z: 0 }
   });
   
   // Update room count
@@ -186,24 +191,90 @@ wss.on('connection', (ws) => {
         
         // Accept the projectile
         c.lastCombatAction = now;
+      } else if (msg.t === 'inputCommand') {
+        const c = clients.get(id);
+        if (!c || !msg.input) return;
         
-        const projectile = {
-          ...msg.projectile,
-          playerId: id,
-          room: c.room,
-          createdAt: now,
-          // Server adds authoritative data
-          validated: true
-        };
+        // Process input command for client prediction
+        const input = msg.input;
+        const now = Date.now();
         
-        projectiles.set(msg.projectile.id, projectile);
-        console.log(`[combat] Player ${id} fired ${msg.projectile.type} projectile ${msg.projectile.id} (speed: ${velocity.toFixed(1)})`);
+        // Validate sequence number (prevent replay attacks)
+        if (input.sequenceNumber <= c.lastInputSequence) {
+          console.log(`[prediction] Player ${id} sent old sequence ${input.sequenceNumber} (last: ${c.lastInputSequence})`);
+          return;
+        }
         
-        // Broadcast to all players in the same room
-        broadcastToRoom(c.room, { 
-          t: 'projectileCreated', 
-          projectile 
+        c.lastInputSequence = input.sequenceNumber;
+        
+        // Apply input to server-side player state
+        const deltaTime = Math.min(input.deltaTime, 1/30); // Cap at 30 FPS for security
+        
+        // Apply movement (same logic as client prediction)
+        const rightInput = Math.abs(input.right) > 0.01 ? input.right : 0;
+        const forwardInput = Math.abs(input.forward) > 0.01 ? input.forward : 0;
+        
+        const speed = 5.5;
+        const targetVx = rightInput * speed;
+        const targetVz = -forwardInput * speed;
+        const accel = 20;
+        
+        // Apply acceleration
+        c.velocity.x += (targetVx - c.velocity.x) * Math.min(1, accel * deltaTime);
+        c.velocity.z += (targetVz - c.velocity.z) * Math.min(1, accel * deltaTime);
+        
+        // Apply jump (simplified server-side)
+        if (input.jump && c.y <= 1) { // Simple ground check
+          c.velocity.y = 4.5;
+        }
+        
+        // Apply gravity
+        c.velocity.y -= 9.82 * deltaTime;
+        
+        // Update position
+        const newX = c.x + c.velocity.x * deltaTime;
+        const newY = Math.max(0.5, c.y + c.velocity.y * deltaTime); // Don't go below ground
+        const newZ = c.z + c.velocity.z * deltaTime;
+        
+        // Boundary validation (same as position handler)
+        const BOUNDARY = 15;
+        if (c.room === 'lobby') {
+          c.x = Math.max(-BOUNDARY, Math.min(BOUNDARY, newX));
+          c.z = Math.max(-BOUNDARY, Math.min(BOUNDARY, newZ));
+        } else {
+          c.x = newX;
+          c.z = newZ;
+        }
+        c.y = newY;
+        
+        // Ground collision (simplified)
+        if (c.y <= 0.5) {
+          c.y = 0.5;
+          c.velocity.y = Math.max(0, c.velocity.y);
+        }
+        
+        // Store input in buffer for potential reconciliation
+        c.inputBuffer.push({
+          sequenceNumber: input.sequenceNumber,
+          input: input,
+          resultPosition: { x: c.x, y: c.y, z: c.z },
+          resultVelocity: { x: c.velocity.x, y: c.velocity.y, z: c.velocity.z },
+          timestamp: now
         });
+        
+        // Cleanup old buffer entries (keep 2 seconds)
+        c.inputBuffer = c.inputBuffer.filter(entry => now - entry.timestamp < 2000);
+        
+        // Send acknowledgment to client for reconciliation
+        sendTo(id, {
+          t: 'inputAck',
+          sequenceNumber: input.sequenceNumber,
+          position: { x: c.x, y: c.y, z: c.z },
+          velocity: { x: c.velocity.x, y: c.velocity.y, z: c.velocity.z },
+          timestamp: now
+        });
+        
+        console.log(`[prediction] Processed input ${input.sequenceNumber} for player ${id} -> (${c.x.toFixed(1)}, ${c.y.toFixed(1)}, ${c.z.toFixed(1)})`);
       } else if (msg.t === 'projectileDestroy') {
         const c = clients.get(id);
         if (!c || !msg.id) return;

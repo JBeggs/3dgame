@@ -73,6 +73,7 @@ function emit() {
 export type NetAPI = {
   sendChat: (text: string) => void;
   sendPosition: (x: number, y: number, z: number, rotation?: number) => void;
+  sendInputCommand: (input: any) => void;
   sendProjectileCreate: (projectile: Omit<ProjectileSnapshot, 'playerId'>) => void;
   sendProjectileDestroy: (projectileId: string) => void;
   joinRoom: (room: string) => void;
@@ -330,6 +331,31 @@ export function connect(): NetAPI {
             }
           }));
           break;
+        case 'inputAck':
+          // Server acknowledged our input command - use for reconciliation
+          if (msg.sequenceNumber && msg.position) {
+            window.dispatchEvent(new CustomEvent('inputAcknowledged', {
+              detail: {
+                sequenceNumber: msg.sequenceNumber,
+                position: msg.position,
+                timestamp: msg.timestamp
+              }
+            }));
+          }
+          break;
+        case 'stateUpdate':
+          // Server sends authoritative state update for reconciliation
+          if (msg.position && msg.sequenceNumber) {
+            window.dispatchEvent(new CustomEvent('serverStateUpdate', {
+              detail: {
+                position: msg.position,
+                velocity: msg.velocity,
+                sequenceNumber: msg.sequenceNumber,
+                timestamp: msg.timestamp
+              }
+            }));
+          }
+          break;
       }
     } catch {}
   });
@@ -371,6 +397,14 @@ const api: NetAPI = {
     ws.send(JSON.stringify({ 
       t: 'projectileCreate', 
       projectile 
+    }));
+  },
+  sendInputCommand(input: any) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    // Send input command with sequence number for prediction
+    ws.send(JSON.stringify({ 
+      t: 'inputCommand', 
+      input 
     }));
   },
   sendProjectileDestroy(projectileId: string) {

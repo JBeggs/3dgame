@@ -9,6 +9,7 @@ import { setPlayerPos } from './worldState';
 import { useNet } from '../net/net';
 import { getAudio } from './audio';
 import { getPlayerCombat, updatePlayerCombat } from './playerCombat';
+import { getClientPrediction } from '../net/prediction';
 
 export function PlayerMesh() {
   // Move all logic directly into the component to fix Fast Refresh
@@ -30,6 +31,7 @@ export function PlayerMesh() {
   const net = useMemo(() => connect(), []);
   const netState = useNet();
   const combat = useMemo(() => getPlayerCombat(), []);
+  const prediction = useMemo(() => getClientPrediction(), []);
   const [avatarRotation, setAvatarRotation] = useState(0);
 
   useFrame((_, dt) => {
@@ -64,15 +66,11 @@ export function PlayerMesh() {
       });
     }
     
-    // Accelerate toward desired horizontal velocity for smoother motion
-    const targetVx = move.x * speed;
-    const targetVz = move.z * speed;
-    const accel = 20;
-    playerBody.velocity.x += (targetVx - playerBody.velocity.x) * Math.min(1, accel * dt);
-    playerBody.velocity.z += (targetVz - playerBody.velocity.z) * Math.min(1, accel * dt);
-    // basic jump
+    // CLIENT PREDICTION: Send input to prediction system instead of direct physics
+    const inputCommand = prediction.sendInput(net);
+    
+    // Audio feedback for jump (client-side for immediate response)
     if (input.state.jump && physics.isGrounded()) {
-      playerBody.velocity.y = 4.5;
       getAudio().play('jump');
     }
     
@@ -99,17 +97,26 @@ export function PlayerMesh() {
       const angle = Math.atan2(playerBody.velocity.x, playerBody.velocity.z);
       setAvatarRotation(angle);
       
-      // Debug logging for rotation
-      console.log('🧭 Movement:', {
-        velocity: `x:${playerBody.velocity.x.toFixed(2)}, z:${playerBody.velocity.z.toFixed(2)}`,
-        angle: `${(angle * 180 / Math.PI).toFixed(0)}°`,
-        speed: movementSpeed.toFixed(2)
+      // Debug logging for rotation (reduced)
+      if (Math.random() < 0.01) {
+        console.log('🧭 Movement (predicted):', {
+          velocity: `x:${playerBody.velocity.x.toFixed(2)}, z:${playerBody.velocity.z.toFixed(2)}`,
+          angle: `${(angle * 180 / Math.PI).toFixed(0)}°`,
+          speed: movementSpeed.toFixed(2)
+        });
+      }
+    }
+    
+    // Prediction-based debug logging
+    if (inputCommand && Math.random() < 0.02) {
+      console.log('🔮 Prediction active:', {
+        seq: inputCommand.sequenceNumber,
+        pos: `${playerBody.position.x.toFixed(1)}, ${playerBody.position.y.toFixed(1)}, ${playerBody.position.z.toFixed(1)}`,
+        input: `${inputCommand.right.toFixed(2)}, ${inputCommand.forward.toFixed(2)}`
       });
     }
     
-    physics.step(dt);
-    // send network position and rotation (throttled inside net api)
-    net.sendPosition(playerBody.position.x, playerBody.position.y, playerBody.position.z, avatarRotation);
+    // NOTE: physics.step() and net.sendPosition() are handled by prediction system
     // simple reconciliation: if server pos diverges a lot, snap toward it
     // TEMPORARILY DISABLED - causing respawn loop issue
     /*
