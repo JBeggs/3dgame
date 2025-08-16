@@ -40,6 +40,24 @@ export function getInput(): InputAPI {
     if (e.code === 'Space' || e.code.startsWith('Arrow')) {
       try { e.preventDefault(); } catch {}
     }
+    
+    // Weapon switching
+    if (e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3') {
+      try {
+        const combat = (window as any).gameApi?.getPlayerCombat?.() || null;
+        if (combat) {
+          const weapons = ['magic', 'ricochet', 'explosive'];
+          const index = parseInt(e.code.slice(-1)) - 1;
+          if (index >= 0 && index < weapons.length) {
+            combat.setProjectileType(weapons[index]);
+            console.log(`🔫 Switched to ${weapons[index]} (${index + 1})`);
+          }
+        }
+      } catch (error) {
+        // Ignore weapon switching errors in early development
+      }
+    }
+    
     keys.add(e.code);
     if (e.code === 'Space') state.jump = true;
     if (e.code === 'KeyE') state.action = true;

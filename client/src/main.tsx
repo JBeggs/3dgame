@@ -65,10 +65,12 @@ const net = connect();
 // Expose avatar API for console testing
 import { avatarStore } from './avatar/store';
 import { clearAvatarCache } from './avatar/loader';
+import { getPlayerCombat } from './game/playerCombat';
 (window as any).gameApi = {
   ...((window as any).gameApi || {}),
   setAvatar: avatarStore.set.bind(avatarStore),
   getAvatar: avatarStore.get.bind(avatarStore),
+  getPlayerCombat: () => getPlayerCombat(),
   clearAvatarCache,
   testAvatar: () => {
     console.log('🎭 Current avatar config:', avatarStore.get());
@@ -93,6 +95,23 @@ import { clearAvatarCache } from './avatar/loader';
     clearAvatarCache();
     avatarStore.set({ bodyId: 'bodyC' });
     console.log('✅ Switched to bodyC. Check console for animation debug info.');
+  },
+  // Advanced projectile testing
+  testProjectiles: () => {
+    const combat = getPlayerCombat();
+    console.log('💥 Testing advanced projectiles...');
+    console.log('Current type:', combat.getProjectileType());
+    console.log('Available: magic, ricochet, explosive');
+    console.log('✅ Use: window.gameApi.setWeapon("ricochet") to switch');
+  },
+  setWeapon: (type: string) => {
+    const combat = getPlayerCombat();
+    if (['magic', 'ricochet', 'explosive'].includes(type)) {
+      combat.setProjectileType(type as any);
+      console.log(`🔫 Weapon switched to: ${type}`);
+    } else {
+      console.log('❌ Invalid weapon. Use: magic, ricochet, or explosive');
+    }
   }
 };
 

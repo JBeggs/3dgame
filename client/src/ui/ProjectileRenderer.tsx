@@ -17,18 +17,32 @@ export function ProjectileRenderer() {
     // Update projectile manager
     projectileManager.update(deltaTime);
     
-    // Check wall collisions and create impact particles
+    // Check wall collisions and handle advanced projectile effects
     const grid = getGrid();
     if (grid) {
       const cellSize = 1.2; // Same as MapScene
-      const wallHits = projectileManager.checkWallCollisions(
+      const { hits: wallHits, explosions } = projectileManager.checkWallCollisions(
         (x, y) => x >= 0 && y >= 0 && x < grid.w && y < grid.h && grid.cells[y * grid.w + x] === 0,
         cellSize
       );
       
-      // Create impact particles for wall hits
+      // Create impact particles for regular wall hits
       wallHits.forEach(projectile => {
-        getParticleManager().createEffect(projectile.position, 'impact');
+        if (projectile.type === 'ricochet') {
+          getParticleManager().createEffect(projectile.position, 'sparks');
+          getAudio().play('ricochet');
+        } else if (projectile.type !== 'explosive') { // Explosives handle their own effects
+          getParticleManager().createEffect(projectile.position, 'impact');
+        }
+      });
+      
+      // Handle explosions
+      explosions.forEach(explosion => {
+        getParticleManager().createEffect(explosion.position, 'explosion');
+        getAudio().play('explosion');
+        
+        // Apply area damage to nearby enemies and player
+        handleExplosionDamage(explosion);
       });
     }
     
@@ -64,4 +78,24 @@ export function ProjectileRenderer() {
   });
 
   return <InstancedProjectiles projectiles={instancedProjectileData} />;
+}
+
+// Handle explosion area damage
+function handleExplosionDamage(explosion: { position: THREE.Vector3; radius: number; damage: number; ownerId?: string }) {
+  const playerBody = getPhysics().playerBody;
+  const playerPos = new THREE.Vector3(playerBody.position.x, playerBody.position.y, playerBody.position.z);
+  
+  // Check player damage (if not from player)
+  if (explosion.ownerId !== 'player') {
+    const playerDistance = explosion.position.distanceTo(playerPos);
+    if (playerDistance <= explosion.radius) {
+      const falloff = 1 - (playerDistance / explosion.radius);
+      const damage = explosion.damage * falloff;
+      playerHealth.damage(damage);
+      getParticleManager().createEffect(playerPos, 'blood');
+    }
+  }
+  
+  // TODO: Add enemy damage when we have a centralized enemy system
+  console.log(`💥 Explosion at ${explosion.position.x.toFixed(1)}, ${explosion.position.z.toFixed(1)} - Radius: ${explosion.radius}, Damage: ${explosion.damage}`);
 }

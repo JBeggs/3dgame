@@ -3,6 +3,8 @@ import { getProjectileManager } from './projectiles';
 import { getPhysics } from './physics';
 import { getAudio } from './audio';
 
+export type ProjectileType = 'magic' | 'ricochet' | 'explosive';
+
 export interface PlayerCombat {
   canAttack: () => boolean;
   performAttack: (targetDirection: THREE.Vector3) => void;
@@ -10,6 +12,8 @@ export interface PlayerCombat {
   getCooldownProgress: () => number; // 0-1 for UI
   getAmmo: () => number;
   reload: () => void;
+  setProjectileType: (type: ProjectileType) => void;
+  getProjectileType: () => ProjectileType;
 }
 
 class PlayerCombatManager {
@@ -24,6 +28,9 @@ class PlayerCombatManager {
   private reloadTime = 2000; // 2 seconds to reload
   private isReloading = false;
   private reloadStartTime = 0;
+  
+  // Projectile type system
+  private currentProjectileType: ProjectileType = 'magic';
 
   canAttack(): boolean {
     const now = Date.now();
@@ -52,27 +59,59 @@ class PlayerCombatManager {
     const playerPos = getPhysics().playerBody.position;
     const shootPos = new THREE.Vector3(playerPos.x, playerPos.y + 0.8, playerPos.z);
     
-    // Create player projectile
+    // Create player projectile with advanced properties
     const projectileManager = getProjectileManager();
+    let options = {};
+    let damage = 25;
+    let speed = 12;
+    
+    switch (this.currentProjectileType) {
+      case 'ricochet':
+        options = { bounces: 3 };
+        damage = 20; // Slightly less damage but bounces
+        speed = 14; // Faster
+        break;
+      case 'explosive':
+        options = { explosionRadius: 2.5, explosionDamage: 40 };
+        damage = 15; // Lower direct hit damage, but area effect
+        speed = 10; // Slower
+        break;
+      case 'magic':
+      default:
+        // Default magic projectile
+        break;
+    }
+    
     const projectileId = projectileManager.createProjectile(
       shootPos,
       targetPos,
-      12, // Faster than enemy projectiles
-      25, // Player damage
-      'magic', // Use magic type for player projectiles
-      'player' // Player ID to prevent self-damage
+      speed,
+      damage,
+      this.currentProjectileType,
+      'player', // Player ID to prevent self-damage
+      options
     );
     
     this.currentAmmo--;
     this.lastRangedAttackTime = Date.now();
     
-    getAudio().play('shoot');
-    console.log(`🏹 Ranged attack! Ammo: ${this.currentAmmo}/${this.maxAmmo}`);
+    const audioClip = this.currentProjectileType === 'explosive' ? 'launch' : 'shoot';
+    getAudio().play(audioClip);
+    console.log(`🏹 ${this.currentProjectileType} projectile! Ammo: ${this.currentAmmo}/${this.maxAmmo}`);
     
     // Auto-reload when empty
     if (this.currentAmmo === 0) {
       this.reload();
     }
+  }
+
+  setProjectileType(type: ProjectileType): void {
+    this.currentProjectileType = type;
+    console.log(`🔄 Switched to ${type} projectiles`);
+  }
+
+  getProjectileType(): ProjectileType {
+    return this.currentProjectileType;
   }
 
   reload(): void {
@@ -142,7 +181,9 @@ export function getPlayerCombat(): PlayerCombat {
     performRangedAttack: (pos) => combatManager!.performRangedAttack(pos),
     getCooldownProgress: () => combatManager!.getCooldownProgress(),
     getAmmo: () => combatManager!.getAmmo(),
-    reload: () => combatManager!.reload()
+    reload: () => combatManager!.reload(),
+    setProjectileType: (type) => combatManager!.setProjectileType(type),
+    getProjectileType: () => combatManager!.getProjectileType()
   };
 }
 
