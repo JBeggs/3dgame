@@ -5,6 +5,7 @@ import { Spider } from '../ai/spider';
 import { inventory } from '../game/inventory';
 import { getCoinTarget } from '../game/config';
 import { setGrid } from '../game/worldState';
+import { aStar } from '../ai/pathfind';
 import * as THREE from 'three';
 import { mulberry32 } from '../gen/mapGen';
 import { getInput } from '../game/input';
@@ -81,7 +82,7 @@ export function MapScene() {
     <InstancedWalls positions={wallPositions} size={cellSize} />
     <Decorations rooms={grid.rooms} cellSize={cellSize} seed={defaultSeed} />
     {/* Spawn a spider in every third room */}
-    {grid.rooms.map((r, i) => (r.tag === 'lair') && <Spider key={`sp-${i}`} position={[ (r.cx + 0.5)*cellSize, 0.3, (r.cy + 0.5)*cellSize ] as any} />)}
+    {grid.rooms.map((r, i) => (r.tag === 'lair') && <PathSpider key={`sp-${i}`} grid={grid} cellSize={cellSize} start={[ (r.cx + 0.5)*cellSize, 0.3, (r.cy + 0.5)*cellSize ] as any} />)}
     {coins.map(c => !collected.has(c.id) && (
       <mesh key={`coin-${c.id}`} position={[c.x, c.y, c.z]}>
         <cylinderGeometry args={[0.12, 0.12, 0.08, 12]} />
@@ -130,6 +131,40 @@ function ProximityCoinCollector({ coins, collected, setCollected }: { coins: { x
     return () => clearInterval(id);
   }, [coins, collected, setCollected]);
   return null;
+}
+
+function PathSpider({ grid, cellSize, start }: { grid: any; cellSize: number; start: [number, number, number] }) {
+  const ref = useRef<THREE.Mesh>(null!);
+  useEffect(() => { ref.current.position.set(start[0], start[1], start[2]); }, [start]);
+  useEffect(() => {
+    const id = setInterval(() => {
+      const body = getPhysics().playerBody;
+      // Convert world positions to grid indices
+      const sx = Math.floor(ref.current.position.x / cellSize);
+      const sy = Math.floor(ref.current.position.z / cellSize);
+      const gx = Math.floor(body.position.x / cellSize);
+      const gy = Math.floor(body.position.z / cellSize);
+      const path = aStar({ w: grid.w, h: grid.h, cells: grid.cells }, sx, sy, gx, gy);
+      if (path.length > 1) {
+        const next = path[1];
+        const tx = (next.x + 0.5) * cellSize;
+        const tz = (next.y + 0.5) * cellSize;
+        const dx = tx - ref.current.position.x;
+        const dz = tz - ref.current.position.z;
+        const len = Math.hypot(dx, dz) || 1;
+        const step = Math.min(0.08, len);
+        ref.current.position.x += (dx / len) * step;
+        ref.current.position.z += (dz / len) * step;
+      }
+    }, 100);
+    return () => clearInterval(id);
+  }, [grid, cellSize]);
+  return (
+    <mesh ref={ref as any} castShadow>
+      <sphereGeometry args={[0.25, 12, 12]} />
+      <meshStandardMaterial color={'#3c0'} />
+    </mesh>
+  );
 }
 
 function GoalGate({ grid, cellSize }: { grid: any; cellSize: number }) {

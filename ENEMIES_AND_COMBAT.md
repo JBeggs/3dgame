@@ -4,6 +4,7 @@ What was added
 - `client/src/ai/spider.tsx`: simple enemy that seeks the player and applies contact damage.
 - `client/src/game/health.ts`: player health store + HUD integration.
 - `MapScene` spawns one spider to demonstrate.
+ - Pathing: `client/src/ai/pathfind.ts` provides A* on the grid; `PathSpider` uses it to move room-to-room.
 
 How to try
 ```
