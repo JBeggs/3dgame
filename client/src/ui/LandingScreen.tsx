@@ -13,50 +13,67 @@ export function AvatarSetupScreen({ onContinue }: { onContinue: () => void }) {
       position: 'absolute', 
       inset: 0, 
       display: 'flex', 
-      alignItems: 'center', 
+      alignItems: window.innerHeight > 900 ? 'center' : 'flex-start', 
       justifyContent: 'center', 
       background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(20,30,48,0.9) 100%)', 
       backdropFilter: 'blur(10px)', 
       zIndex: 20, 
-      pointerEvents: 'auto' 
+      pointerEvents: 'auto',
+      padding: '16px',
+      boxSizing: 'border-box',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch'
     }}>
       <div style={{ 
-        width: '90%',
+        width: '100%',
         maxWidth: 900, 
         background: 'rgba(15,20,30,0.95)', 
         color: '#fff', 
         borderRadius: 16, 
-        padding: 32, 
+        padding: window.innerWidth < 768 ? 16 : 32, 
         fontFamily: 'system-ui, -apple-system, sans-serif',
         border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+        boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+        marginTop: window.innerHeight > 900 ? 0 : '16px',
+        marginBottom: '16px'
       }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{ textAlign: 'center', marginBottom: window.innerWidth < 768 ? 20 : 32 }}>
           <h2 style={{ 
-            fontSize: '2rem', 
+            fontSize: window.innerWidth < 768 ? '1.5rem' : '2rem', 
             marginTop: 0, 
             marginBottom: 8,
             background: 'linear-gradient(135deg, #f59e0b, #3b82f6)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            lineHeight: 1.2
           }}>
             🎨 Customize Your Experience
           </h2>
-          <p style={{ color: '#94a3b8', fontSize: '1rem', margin: 0 }}>
+          <p style={{ 
+            color: '#94a3b8', 
+            fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem', 
+            margin: 0,
+            lineHeight: 1.4
+          }}>
             Personalize your avatar and configure your world settings
           </p>
         </div>
 
         {/* Content Sections */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginBottom: 32 }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', 
+          gap: window.innerWidth < 768 ? 20 : 32, 
+          marginBottom: window.innerWidth < 768 ? 20 : 32 
+        }}>
           {/* Avatar Section */}
           <div style={{ 
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: 12,
-            padding: 24
+            padding: window.innerWidth < 768 ? 16 : 24
           }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
               <div style={{ 
@@ -147,7 +164,7 @@ export function AvatarSetupScreen({ onContinue }: { onContinue: () => void }) {
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: 12,
-            padding: 24
+            padding: window.innerWidth < 768 ? 16 : 24
           }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
               <div style={{ 
@@ -200,12 +217,19 @@ export function AvatarSetupScreen({ onContinue }: { onContinue: () => void }) {
         {/* Footer */}
         <div style={{ 
           display: 'flex', 
+          flexDirection: window.innerWidth < 768 ? 'column' : 'row',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          paddingTop: 24,
+          alignItems: window.innerWidth < 768 ? 'stretch' : 'center',
+          gap: window.innerWidth < 768 ? 16 : 0,
+          paddingTop: window.innerWidth < 768 ? 16 : 24,
           borderTop: '1px solid rgba(255,255,255,0.1)'
         }}>
-          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+          <div style={{ 
+            fontSize: window.innerWidth < 768 ? '0.75rem' : '0.8rem', 
+            color: '#64748b',
+            textAlign: window.innerWidth < 768 ? 'center' : 'left',
+            lineHeight: 1.4
+          }}>
             💡 You can modify these settings anytime in-game
           </div>
           
@@ -222,8 +246,8 @@ export function AvatarSetupScreen({ onContinue }: { onContinue: () => void }) {
               onContinue(); 
             }}
             style={{
-              padding: '14px 32px',
-              fontSize: '1rem',
+              padding: window.innerWidth < 768 ? '16px 24px' : '14px 32px',
+              fontSize: window.innerWidth < 768 ? '0.9rem' : '1rem',
               background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
               color: '#fff',
               border: 'none',
@@ -232,7 +256,8 @@ export function AvatarSetupScreen({ onContinue }: { onContinue: () => void }) {
               fontWeight: 'bold',
               boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
               transition: 'all 0.2s ease',
-              transform: 'translateY(0)'
+              transform: 'translateY(0)',
+              width: window.innerWidth < 768 ? '100%' : 'auto'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';

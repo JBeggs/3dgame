@@ -6,33 +6,41 @@ export function MainLandingPage({ onPlayGame }: { onPlayGame: () => void }) {
       position: 'absolute', 
       inset: 0, 
       display: 'flex', 
-      alignItems: 'center', 
+      alignItems: window.innerHeight > 800 ? 'center' : 'flex-start', 
       justifyContent: 'center', 
       background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(20,30,48,0.9) 100%)', 
       backdropFilter: 'blur(10px)', 
       zIndex: 30, 
-      pointerEvents: 'auto' 
+      pointerEvents: 'auto',
+      padding: '16px',
+      boxSizing: 'border-box',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch'
     }}>
       <div style={{ 
+        width: '100%',
         maxWidth: 600, 
         background: 'rgba(15,20,30,0.95)', 
         color: '#fff', 
         borderRadius: 16, 
-        padding: 32, 
+        padding: window.innerWidth < 768 ? 20 : 32, 
         fontFamily: 'system-ui, -apple-system, sans-serif',
         textAlign: 'center',
         border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+        boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+        marginTop: window.innerHeight > 800 ? 0 : '16px',
+        marginBottom: '16px'
       }}>
         {/* Game Title */}
         <h1 style={{ 
-          fontSize: '2.5rem', 
+          fontSize: window.innerWidth < 768 ? '2rem' : '2.5rem', 
           marginTop: 0, 
           marginBottom: 16,
           background: 'linear-gradient(135deg, #4ade80, #3b82f6)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          lineHeight: 1.2
         }}>
           🌍 3D Multiplayer Adventure
         </h1>
@@ -43,7 +51,12 @@ export function MainLandingPage({ onPlayGame }: { onPlayGame: () => void }) {
             Explore procedurally generated dungeons in this immersive 3D multiplayer experience.
           </p>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', 
+            gap: window.innerWidth < 768 ? 16 : 20, 
+            marginBottom: 24 
+          }}>
             <div style={{ textAlign: 'left' }}>
               <h3 style={{ color: '#4ade80', fontSize: '1rem', marginBottom: 8 }}>🎮 Features</h3>
               <ul style={{ fontSize: '0.9rem', color: '#cbd5e1', paddingLeft: 16, margin: 0 }}>
@@ -80,9 +93,9 @@ export function MainLandingPage({ onPlayGame }: { onPlayGame: () => void }) {
         {/* Controls Info */}
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
+          gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1fr', 
           gap: 16, 
-          marginBottom: 32,
+          marginBottom: window.innerWidth < 768 ? 24 : 32,
           fontSize: '0.85rem',
           color: '#94a3b8'
         }}>
