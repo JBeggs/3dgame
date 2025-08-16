@@ -22,13 +22,13 @@ export function TouchControls() {
     function onMouseMove(e: MouseEvent) { compute(e.clientX, e.clientY); }
     function onMouseLeave() { input.setVector(0, 0); }
     function onPointerUp() { input.setVector(0, 0); }
-    el.addEventListener('touchstart', onTouchStart);
-    el.addEventListener('touchmove', onTouchMove);
-    el.addEventListener('touchend', onTouchEnd);
-    el.addEventListener('mouseenter', onMouseEnter);
-    el.addEventListener('mousemove', onMouseMove);
-    el.addEventListener('mouseleave', onMouseLeave);
-    el.addEventListener('pointerup', onPointerUp);
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: true });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    el.addEventListener('mouseenter', onMouseEnter, { passive: true } as any);
+    el.addEventListener('mousemove', onMouseMove, { passive: true } as any);
+    el.addEventListener('mouseleave', onMouseLeave, { passive: true } as any);
+    el.addEventListener('pointerup', onPointerUp, { passive: true });
     return () => {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
