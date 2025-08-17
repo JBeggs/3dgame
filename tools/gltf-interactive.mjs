@@ -86,18 +86,27 @@ async function promptInteractive(presetHint = 'balanced') {
 }
 
 function buildOptimizeArgs(a) {
+  // gltf-transform v4 'optimize' options
   const args = ['@gltf-transform/cli', 'optimize', a.inputPath, a.tmpPath];
+  // Compression method
   if (a.useDraco) {
-    const d = a.preset === 'high' ? { pos: 14, nrm: 12, uv: 12, col: 10 } : a.preset === 'small' ? { pos: 10, nrm: 8, uv: 8, col: 8 } : { pos: 12, nrm: 10, uv: 10, col: 9 };
-    args.push('--draco', '--draco-position', String(d.pos), '--draco-normal', String(d.nrm), '--draco-uv', String(d.uv), '--draco-color', String(d.col));
+    args.push('--compress', 'draco');
+  } else if (a.useMeshopt) {
+    args.push('--compress', 'meshopt', '--meshopt-level', 'high');
+  } else {
+    args.push('--compress', 'quantize');
   }
-  if (a.useMeshopt) {
-    args.push('--meshopt', '--meshopt-compression', 'medium');
+  // Simplification
+  if (a.simplifyError > 0) {
+    args.push('--simplify', 'true', '--simplify-error', String(a.simplifyError));
+  } else {
+    args.push('--simplify', 'false');
   }
-  args.push('--prune', '--dedup', '--weld', '0.0001');
-  if (a.simplifyError > 0) args.push('--simplify', String(a.simplifyError));
-  if (a.maxTexture > 0) args.push('--texture-resize', String(a.maxTexture));
-  args.push('--texture-compress', 'none');
+  // Texture size
+  if (a.maxTexture > 0) args.push('--texture-size', String(a.maxTexture));
+  // Let optimize handle prune/weld/resample defaults
+  // Texture compress is handled by separate ktx2 step
+  args.push('--texture-compress', 'false');
   return args;
 }
 
