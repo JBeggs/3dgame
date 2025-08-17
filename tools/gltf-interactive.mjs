@@ -101,11 +101,31 @@ function buildOptimizeArgs(a) {
   return args;
 }
 
+function invokeGltfTransform(argv) {
+  // Prefer local/global binary if available
+  if (which('gltf-transform')) {
+    const r = run('gltf-transform', argv);
+    if (r.status === 0) return r;
+  }
+  // Fallback 1: npx with package spec + bin name
+  let r = run('npx', ['-y', '-p', '@gltf-transform/cli', 'gltf-transform', ...argv]);
+  if (r.status === 0) return r;
+  // Fallback 2: npx package runner style
+  r = run('npx', ['-y', '@gltf-transform/cli', ...argv]);
+  return r;
+}
+
 function runGltfTransformOptimize(a) {
   const args = buildOptimizeArgs(a);
-  const res = run('npx', ['--yes', ...args]);
+  // Replace first two items with just arguments for the binary call
+  // buildOptimizeArgs returns ['@gltf-transform/cli','optimize', input, tmp, ...]
+  // We need ['optimize', input, tmp, ...]
+  const argv = args.slice(1); 
+  const res = invokeGltfTransform(argv);
   if (res.status !== 0) {
-    throw new Error(`optimize failed: ${res.stderr}`);
+    // Emit the last few lines of stderr to aid debugging
+    const stderr = (res.stderr || '').split('\n').slice(-10).join('\n');
+    throw new Error(`optimize failed. Exit ${res.status}.\n${stderr}`);
   }
 }
 
@@ -118,9 +138,10 @@ function runGltfTransformKTX2(a) {
   } else {
     kArgs.push('--etc1s', '1', '--quality', '128', '--compression', '5');
   }
-  const res = run('npx', ['--yes', ...kArgs]);
+  const argv = kArgs.slice(1); // drop package spec, use bin args
+  const res = invokeGltfTransform(argv);
   if (res.status !== 0) {
-    console.warn('KTX2 step failed; writing optimize output instead. Error:', res.stderr);
+    console.warn('KTX2 step failed; writing optimize output instead.');
     fs.copyFileSync(a.tmpPath, a.outputPath);
     return false;
   }
