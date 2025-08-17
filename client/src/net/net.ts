@@ -68,7 +68,18 @@ const store: Store = {
   subscribers: new Set(),
 };
 
+// Cached snapshot for useSyncExternalStore. Must only change during emit().
+let snapshot: Readonly<Store> = store as unknown as Readonly<Store>;
+
 function emit() {
+  // Recompute a shallow snapshot so getSnapshot changes only when we emit
+  snapshot = {
+    ...store,
+    players: store.players,
+    playersPrev: store.playersPrev,
+    remoteProjectiles: store.remoteProjectiles,
+    remoteProjectilesPrev: store.remoteProjectilesPrev,
+  } as Readonly<Store>;
   store.subscribers.forEach((fn) => fn());
 }
 
@@ -95,18 +106,15 @@ export function connect(): NetAPI {
     return api;
   }
   const url = (import.meta.env.VITE_WS_URL as string) || `ws://${location.hostname}:8080`;
-  console.log('🔌 Connecting to WebSocket:', url);
   ws = new WebSocket(url);
   ws.addEventListener('open', () => {
-    console.log('✅ WebSocket connected successfully');
     store.connected = true;
     emit();
   });
   ws.addEventListener('error', (error) => {
-    console.error('❌ WebSocket error:', error);
+    // quiet
   });
   ws.addEventListener('close', (event) => {
-    console.log('🔌 WebSocket closed:', { code: event.code, reason: event.reason });
     store.connected = false;
     emit();
   });
@@ -115,7 +123,6 @@ export function connect(): NetAPI {
       const msg = JSON.parse(String(ev.data));
       switch (msg.t) {
         case 'welcome':
-          console.log('🎉 Welcome message - assigned player ID:', msg.id);
           store.selfId = msg.id;
           emit();
           break;
@@ -130,7 +137,7 @@ export function connect(): NetAPI {
           const now = performance.now();
           store.tPrev = store.tCurr || now;
           store.tCurr = now;
-          store.playersPrev = store.players;
+          store.playersPrev = new Map(store.players);
           const m = new Map<number, PlayerSnapshot>();
           
           // Reduced network logging to focus on input debugging
@@ -142,26 +149,11 @@ export function connect(): NetAPI {
             );
           });
           
-          if (hasMovement) {
-            console.log(`👥 MOVEMENT DETECTED: ${(msg.list as PlayerSnapshot[]).length} players in ${store.currentRoom}`);
-            for (const player of msg.list as PlayerSnapshot[]) {
-              const isMe = player.id === store.selfId;
-              const prevPlayer = store.players.get(player.id);
-              const moved = prevPlayer && (
-                Math.abs(player.x - prevPlayer.x) > 0.1 || 
-                Math.abs(player.z - prevPlayer.z) > 0.1
-              );
-              
-              if (moved || !prevPlayer) {
-                console.log(`  Player ${player.id}${isMe ? ' (me)' : ''}:`, {
-                  pos: `${player.x.toFixed(1)}, ${player.y.toFixed(1)}, ${player.z.toFixed(1)}`,
-                  rot: player.rotation ? `${(player.rotation * 180 / Math.PI).toFixed(0)}°` : 'none',
-                  name: player.name || 'unnamed',
-                  moved: moved ? '✅ MOVED' : '🆕 NEW'
-                });
-              }
-            }
-          }
+          // More detailed movement logging
+          const totalPlayers = (msg.list as PlayerSnapshot[]).length;
+          const otherPlayers = (msg.list as PlayerSnapshot[]).filter(p => p.id !== store.selfId);
+          
+          // quiet
           
           for (const p of msg.list as PlayerSnapshot[]) {
             m.set(p.id, p);
@@ -384,22 +376,28 @@ const api: NetAPI = {
     ws.send(JSON.stringify({ t: 'chat', text }));
   },
   sendPosition(x: number, y: number, z: number, rotation?: number) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.log('⚠️ Cannot send position - WebSocket not open:', ws ? ws.readyState : 'null');
+      return;
+    }
     const now = performance.now();
     if (now - lastPosSent < 1000 / 10) return; // 10Hz
     lastPosSent = now;
     const data: any = { t: 'pos', x, y, z };
     if (rotation !== undefined) {
       data.rotation = rotation;
-      // Throttle debug logging to avoid spam
-      if (now - lastRotationLog > 1000) { // Only log once per second
-        lastRotationLog = now;
-        console.log('📡 Sending position with rotation:', {
-          position: `${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`,
-          rotation: `${(rotation * 180 / Math.PI).toFixed(0)}°`
-        });
-      }
     }
+    
+    // DEBUG: Log every position send (temporarily)
+    if (Math.random() < 0.1) {
+      console.log('📡 SENDING POSITION:', {
+        position: `${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`,
+        rotation: rotation ? `${(rotation * 180 / Math.PI).toFixed(0)}°` : 'none',
+        wsState: ws.readyState,
+        data: JSON.stringify(data).substring(0, 100)
+      });
+    }
+    
     ws.send(JSON.stringify(data));
   },
   sendProjectileCreate(projectile: Omit<ProjectileSnapshot, 'playerId'>) {
@@ -457,8 +455,8 @@ const api: NetAPI = {
     ws.send(JSON.stringify({ t: 'createRoom', name }));
   },
   getState() {
-    // Return the single store reference so useSyncExternalStore can compare by reference
-    return store;
+    // Return the cached snapshot to avoid infinite render loops
+    return snapshot;
   },
 };
 

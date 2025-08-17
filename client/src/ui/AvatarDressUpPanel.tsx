@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useAvatar, avatarStore, AccessorySlot } from '../avatar/store';
+import { useModularAvatar, modularAvatarStore } from '../avatar/modularStore';
+import { clothingDatabase, getItemsBySlot } from '../data/clothingItems';
 
 export function AvatarDressUpPanel() {
   const cfg = useAvatar();
+  const modularCfg = useModularAvatar();
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'parts' | 'colors' | 'accessories' | 'presets'>('parts');
+  const [activeTab, setActiveTab] = useState<'clothing' | 'colors' | 'accessories' | 'presets'>('clothing');
+  const [useModular, setUseModular] = useState(true); // Switch between systems
 
   if (!isOpen) {
     return (
@@ -59,7 +63,7 @@ export function AvatarDressUpPanel() {
         marginBottom: '20px'
       }}>
         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>
-          👗 Avatar Dress Up
+          👗 {useModular ? 'Modular Avatar' : 'Classic Avatar'}
         </h3>
         <button
           onClick={() => setIsOpen(false)}
@@ -85,7 +89,7 @@ export function AvatarDressUpPanel() {
         paddingBottom: '10px'
       }}>
         {[
-          { key: 'parts', label: '🧩 Parts', icon: '🧩' },
+          { key: 'clothing', label: '👕 Clothing', icon: '👕' },
           { key: 'colors', label: '🎨 Colors', icon: '🎨' },
           { key: 'accessories', label: '👑 Items', icon: '👑' },
           { key: 'presets', label: '⭐ Presets', icon: '⭐' }
@@ -111,11 +115,41 @@ export function AvatarDressUpPanel() {
         ))}
       </div>
 
+      {/* System Toggle */}
+      <div style={{ marginBottom: '15px', textAlign: 'center' }}>
+        <button
+          onClick={() => setUseModular(!useModular)}
+          style={{
+            padding: '8px 16px',
+            background: useModular ? '#4a90e2' : '#666',
+            color: 'white',
+            border: 'none',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          }}
+        >
+          {useModular ? '🆕 Modular System' : '📦 Classic System'}
+        </button>
+      </div>
+
       {/* Tab Content */}
-      {activeTab === 'parts' && <PartsTab />}
-      {activeTab === 'colors' && <ColorsTab />}
-      {activeTab === 'accessories' && <AccessoriesTab />}
-      {activeTab === 'presets' && <PresetsTab />}
+      {useModular ? (
+        <>
+          {activeTab === 'clothing' && <ModularClothingTab />}
+          {activeTab === 'colors' && <ModularColorsTab />}
+          {activeTab === 'accessories' && <AccessoriesTab />}
+          {activeTab === 'presets' && <ModularPresetsTab />}
+        </>
+      ) : (
+        <>
+          {activeTab === 'clothing' && <PartsTab />}
+          {activeTab === 'colors' && <ColorsTab />}
+          {activeTab === 'accessories' && <AccessoriesTab />}
+          {activeTab === 'presets' && <PresetsTab />}
+        </>
+      )}
     </div>
   );
 }
@@ -249,6 +283,193 @@ function AccessoriesTab() {
           current={cfg.accessories[slot as AccessorySlot]}
           onChange={(id) => avatarStore.setAccessory(slot as AccessorySlot, id)}
         />
+      ))}
+    </div>
+  );
+}
+
+// NEW: Modular clothing tab
+function ModularClothingTab() {
+  const config = useModularAvatar();
+  
+  const clothingSlots = [
+    { key: 'shirt', name: 'Shirt', emoji: '👕' },
+    { key: 'pants', name: 'Pants', emoji: '👖' },
+    { key: 'shoes', name: 'Shoes', emoji: '👟' },
+    { key: 'hat', name: 'Hat', emoji: '👒' },
+  ];
+
+  return (
+    <div>
+      {clothingSlots.map(slot => (
+        <div key={slot.key} style={{ marginBottom: '20px' }}>
+          <h4 style={{ marginTop: 0, marginBottom: '10px', fontSize: '13px', color: '#ccc' }}>
+            {slot.emoji} {slot.name}
+          </h4>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '8px'
+          }}>
+            {/* None option */}
+            <button
+              onClick={() => modularAvatarStore.equipItem(slot.key as any, undefined)}
+              style={{
+                padding: '10px 8px',
+                background: !config.equipped[slot.key as keyof typeof config.equipped] ? '#4a90e2' : '#2a2a2a',
+                border: !config.equipped[slot.key as keyof typeof config.equipped] ? '2px solid #66a3ff' : '1px solid #444',
+                borderRadius: '6px',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '11px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                minHeight: '60px',
+                justifyContent: 'center'
+              }}
+            >
+              <div style={{ fontSize: '16px' }}>🚫</div>
+              <div>None</div>
+            </button>
+
+            {/* Available items */}
+            {getItemsBySlot(slot.key).map(item => (
+              <button
+                key={item.id}
+                onClick={() => modularAvatarStore.equipItem(slot.key as any, item.id)}
+                style={{
+                  padding: '10px 8px',
+                  background: config.equipped[slot.key as keyof typeof config.equipped] === item.id ? '#4a90e2' : '#2a2a2a',
+                  border: config.equipped[slot.key as keyof typeof config.equipped] === item.id ? '2px solid #66a3ff' : '1px solid #444',
+                  borderRadius: '6px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  minHeight: '60px',
+                  justifyContent: 'center'
+                }}
+              >
+                <div style={{ fontSize: '16px' }}>{slot.emoji}</div>
+                <div>{item.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ModularColorsTab() {
+  const config = useModularAvatar();
+  
+  const colorPresets = [
+    '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7',
+    '#dda0dd', '#ffa07a', '#98fb98', '#f0e68c', '#ffd1dc',
+    '#b0e0e6', '#ffb6c1', '#d3d3d3', '#c0c0c0', '#8fbc8f'
+  ];
+
+  return (
+    <div>
+      <ColorSection
+        title="🎨 Skin Color"
+        current={config.colors.skin}
+        presets={colorPresets}
+        onChange={(color) => modularAvatarStore.setColor('skin', color)}
+      />
+      
+      <ColorSection
+        title="💇 Hair Color"
+        current={config.colors.hair}
+        presets={colorPresets}
+        onChange={(color) => modularAvatarStore.setColor('hair', color)}
+      />
+      
+      <ColorSection
+        title="👕 Primary Color"
+        current={config.colors.primary}
+        presets={colorPresets}
+        onChange={(color) => modularAvatarStore.setColor('primary', color)}
+      />
+      
+      <ColorSection
+        title="🎽 Secondary Color"
+        current={config.colors.secondary}
+        presets={colorPresets}
+        onChange={(color) => modularAvatarStore.setColor('secondary', color)}
+      />
+    </div>
+  );
+}
+
+function ModularPresetsTab() {
+  const presets = [
+    {
+      name: 'Casual',
+      emoji: '😊',
+      config: {
+        equipped: { shirt: 'basic_shirt' },
+        colors: { skin: '#fdbcb4', hair: '#8b4513', primary: '#4ecdc4', secondary: '#45b7d1' }
+      }
+    },
+    {
+      name: 'Formal',
+      emoji: '🎩',
+      config: {
+        equipped: { shirt: 'basic_shirt', hat: 'basic_hat', shoes: 'basic_shoes' },
+        colors: { skin: '#fdbcb4', hair: '#654321', primary: '#2c3e50', secondary: '#34495e' }
+      }
+    },
+    {
+      name: 'Sporty',
+      emoji: '🏃',
+      config: {
+        equipped: { shirt: 'basic_shirt', pants: 'basic_pants', shoes: 'basic_shoes' },
+        colors: { skin: '#f4c2a1', hair: '#ff6b6b', primary: '#e74c3c', secondary: '#c0392b' }
+      }
+    }
+  ];
+
+  return (
+    <div>
+      <h4 style={{ marginTop: 0, marginBottom: '15px', fontSize: '14px', color: '#ccc' }}>
+        Quick Modular Presets
+      </h4>
+      
+      {presets.map(preset => (
+        <div key={preset.name} style={{ marginBottom: '12px' }}>
+          <button
+            onClick={() => modularAvatarStore.set(preset.config)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: '#2a2a2a',
+              border: '1px solid #444',
+              borderRadius: '8px',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}
+          >
+            <div style={{ fontSize: '20px' }}>{preset.emoji}</div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontWeight: 'bold' }}>{preset.name}</div>
+              <div style={{ fontSize: '11px', color: '#999' }}>
+                {Object.keys(preset.config.equipped).length} items equipped
+              </div>
+            </div>
+          </button>
+        </div>
       ))}
     </div>
   );

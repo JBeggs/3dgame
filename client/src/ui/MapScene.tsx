@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Text } from '@react-three/drei';
 import { generateDungeon } from '../gen/mapGen';
 import { generateLobby, defaultLobbyConfig, LobbyConfig } from '../gen/lobbyGen';
 import { getPhysics } from '../game/physics';
@@ -20,6 +21,7 @@ import { mulberry32 } from '../gen/mapGen';
 import { getInput } from '../game/input';
 import { getAudio } from '../game/audio';
 import { useMapState } from '../game/mapStore';
+import { useNet } from '../net/net';
 import { getEnemyHealthManager } from '../game/enemyHealth';
 import { calculateRoomDepth, getScaledEnemyStats } from '../game/difficultyScaling';
 import { ParticleSystem } from '../effects/ParticleSystem';
@@ -27,9 +29,10 @@ import { ParticleSystem } from '../effects/ParticleSystem';
 
 export function MapScene() {
   const mapState = useMapState();
+  const net = useNet();
   
-  // Lobby mode state - start with lobby for movement testing
-  const [useLobby, setUseLobby] = useState(true);
+  // Lobby mode: driven by current room
+  const useLobby = (net.currentRoom ?? 'lobby') === 'lobby';
   const [lobbyConfig, setLobbyConfig] = useState<LobbyConfig>(defaultLobbyConfig);
   
   const grid = useMemo(() => {
@@ -310,20 +313,50 @@ export function MapScene() {
     <ProjectileRenderer />
     <ParticleSystem />
     
-    {/* Simple lobby content - minimal for movement testing */}
+    {/* Improved lobby content */}
     {useLobby && (
-      <>        
-        {/* Center marker so player knows where they are */}
-        <mesh position={[0, 0.05, 0]}>
-          <cylinderGeometry args={[0.3, 0.3, 0.1, 16]} />
-          <meshStandardMaterial 
-            color="#4ade80" 
-            emissive="#22c55e" 
-            emissiveIntensity={0.2}
-            transparent
-            opacity={0.8}
-          />
+      <>
+        {/* Open plaza ground decal */}
+        <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.001, 0]} receiveShadow>
+          <circleGeometry args={[6, 48]} />
+          <meshStandardMaterial color="#1f2937" />
         </mesh>
+        {/* Center marker */}
+        <mesh position={[0, 0.05, 0]} castShadow>
+          <cylinderGeometry args={[0.35, 0.35, 0.12, 20]} />
+          <meshStandardMaterial color="#4ade80" emissive="#22c55e" emissiveIntensity={0.25} />
+        </mesh>
+        {/* Signposts */}
+        <group position={[0,0, -2.2]}>
+          <mesh position={[0,0.8,0]} castShadow>
+            <boxGeometry args={[2.2, 0.5, 0.1]} />
+            <meshStandardMaterial color="#374151" />
+          </mesh>
+          <mesh position={[0,0.82,0.06]}>
+            <planeGeometry args={[2.1, 0.4]} />
+            <meshBasicMaterial color="#111827" />
+          </mesh>
+          <Text position={[0,0.8,0.07]} fontSize={0.18} color={'#e5e7eb'} anchorX="center">Welcome to the Lobby</Text>
+          <Text position={[0,0.55,0.07]} fontSize={0.12} color={'#9ca3af'} anchorX="center">Move around, set name, choose a room</Text>
+        </group>
+        {/* Stations */}
+        <group position={[-2.8,0,1.2]}>
+          <mesh castShadow>
+            <boxGeometry args={[1.2, 0.6, 0.6]} />
+            <meshStandardMaterial color="#374151" />
+          </mesh>
+          <Text position={[0,0.5,0.4]} fontSize={0.12} color={'#e5e7eb'} anchorX="center">Press 3 to List Rooms</Text>
+          <Text position={[0,0.3,0.4]} fontSize={0.12} color={'#a7f3d0'} anchorX="center">Press 2 to Create Private</Text>
+          <Text position={[0,0.1,0.4]} fontSize={0.12} color={'#93c5fd'} anchorX="center">Press 1 to Join Lobby</Text>
+        </group>
+        <group position={[2.8,0,1.2]}>
+          <mesh castShadow>
+            <boxGeometry args={[1.2, 0.6, 0.6]} />
+            <meshStandardMaterial color="#374151" />
+          </mesh>
+          <Text position={[0,0.4,0.4]} fontSize={0.12} color={'#e5e7eb'} anchorX="center">Set Name in Console:</Text>
+          <Text position={[0,0.2,0.4]} fontSize={0.12} color={'#fde68a'} anchorX="center">net.setPlayerName('YourName')</Text>
+        </group>
       </>
     )}
     

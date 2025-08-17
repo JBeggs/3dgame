@@ -5,6 +5,7 @@ import { getInput } from './input';
 import { getPhysics } from './physics';
 import { connect } from '../net/net';
 import { AvatarRoot } from '../avatar/Avatar';
+import { ModularAvatarRoot } from '../avatar/ModularAvatar';
 import { setPlayerPos } from './worldState';
 import { useNet } from '../net/net';
 import { getAudio } from './audio';
@@ -17,13 +18,11 @@ export function PlayerMesh() {
   const physics = useMemo(() => getPhysics(), []);
 
   useEffect(() => {
-    console.log('🔗 Attaching input system...');
     input.attach();
     
     // Input system is working properly now
     
     return () => {
-      console.log('🔌 Detaching input system...');
       input.detach();
     };
   }, [input]);
@@ -33,6 +32,7 @@ export function PlayerMesh() {
   const combat = useMemo(() => getPlayerCombat(), []);
   const prediction = useMemo(() => getClientPrediction(), []);
   const [avatarRotation, setAvatarRotation] = useState(0);
+  const [useModularAvatar, setUseModularAvatar] = useState(false); // TEMP: Use old system until we debug
 
   useFrame((_, dt) => {
     const { playerBody } = physics;
@@ -47,27 +47,12 @@ export function PlayerMesh() {
     const threshold = 0.01; // Ignore tiny gamepad/touch drift
     const hasRealInput = Math.abs(input.state.right) > threshold || Math.abs(input.state.forward) > threshold || input.state.jump;
     
-    // DEBUG: Only show significant input changes (not smoothing decay)
-    const significantInput = Math.abs(input.state.right) > 0.1 || Math.abs(input.state.forward) > 0.1;
-    if (significantInput && Math.random() < 0.1) {
-      console.log('🔧 Input active:', {
-        right: input.state.right.toFixed(2),
-        forward: input.state.forward.toFixed(2),
-        hasRealInput: hasRealInput
-      });
-    }
-    
-    // Reduced movement logging - only occasional updates
-    if (hasRealInput && Math.random() < 0.02) {
-      console.log('🎮 Movement working:', {
-        direction: `${input.state.right.toFixed(2)}, ${input.state.forward.toFixed(2)}`,
-        jump: input.state.jump ? 'YES' : 'no',
-        grounded: physics.isGrounded() ? 'YES' : 'no'
-      });
-    }
+    // no console spam
     
     // CLIENT PREDICTION: Send input to prediction system instead of direct physics
     const inputCommand = prediction.sendInput(net);
+    
+    //
     
     // Audio feedback for jump (client-side for immediate response)
     if (input.state.jump && physics.isGrounded()) {
@@ -86,6 +71,24 @@ export function PlayerMesh() {
       combat.performRangedAttack(targetPos);
     }
     
+    // Handle grenade throwing
+    if (input.state.grenade) {
+      const cameraDirection = camera.getWorldDirection(new THREE.Vector3());
+      const grenadeTarget = new THREE.Vector3(
+        playerBody.position.x + cameraDirection.x * 8,
+        playerBody.position.y + 0.5,
+        playerBody.position.z + cameraDirection.z * 8
+      );
+      combat.throwGrenade(grenadeTarget);
+    }
+    
+    // Handle blocking
+    if (input.state.block && !combat.isBlocking()) {
+      combat.startBlocking();
+    } else if (!input.state.block && combat.isBlocking()) {
+      combat.stopBlocking();
+    }
+    
     // Update combat system
     updatePlayerCombat();
     
@@ -97,24 +100,10 @@ export function PlayerMesh() {
       const angle = Math.atan2(playerBody.velocity.x, playerBody.velocity.z);
       setAvatarRotation(angle);
       
-      // Debug logging for rotation (reduced)
-      if (Math.random() < 0.01) {
-        console.log('🧭 Movement (predicted):', {
-          velocity: `x:${playerBody.velocity.x.toFixed(2)}, z:${playerBody.velocity.z.toFixed(2)}`,
-          angle: `${(angle * 180 / Math.PI).toFixed(0)}°`,
-          speed: movementSpeed.toFixed(2)
-        });
-      }
+      //
     }
     
-    // Prediction-based debug logging
-    if (inputCommand && Math.random() < 0.02) {
-      console.log('🔮 Prediction active:', {
-        seq: inputCommand.sequenceNumber,
-        pos: `${playerBody.position.x.toFixed(1)}, ${playerBody.position.y.toFixed(1)}, ${playerBody.position.z.toFixed(1)}`,
-        input: `${inputCommand.right.toFixed(2)}, ${inputCommand.forward.toFixed(2)}`
-      });
-    }
+    //
     
     // NOTE: physics.step() and net.sendPosition() are handled by prediction system
     // simple reconciliation: if server pos diverges a lot, snap toward it
@@ -140,7 +129,8 @@ export function PlayerMesh() {
   useFrame(() => {
     const p = physics.playerBody.position;
     if (ref.current) {
-      ref.current.position.set(p.x, p.y, p.z);
+      // Add Y offset to lift avatar so feet touch ground, and smooth the movement to prevent jumping
+      ref.current.position.lerp(new THREE.Vector3(p.x, p.y + 0.6, p.z), 0.1);
     }
     setPlayerPos(p.x, p.z);
     // simple chase cam
@@ -151,7 +141,32 @@ export function PlayerMesh() {
 
   return (
     <group ref={ref}>
-      <AvatarRoot position={[0, 0, 0]} rotation={avatarRotation} />
+      {useModularAvatar ? (
+        <ModularAvatarRoot position={[0, 0, 0]} rotation={avatarRotation} />
+      ) : (
+        <AvatarRoot position={[0, 0, 0]} rotation={avatarRotation} />
+      )}
+      
+      {/* Pan blocking shield indicator */}
+      {combat.isBlocking() && (
+        <group position={[0, 0.8, 0.4]} rotation={[0, avatarRotation, 0]}>
+          {/* Shield/Pan visual */}
+          <mesh castShadow>
+            <cylinderGeometry args={[0.3, 0.25, 0.05, 12]} />
+            <meshStandardMaterial color="#FFD700" metalness={0.8} roughness={0.2} />
+          </mesh>
+          {/* Shield rim */}
+          <mesh position={[0, 0, 0.025]} castShadow>
+            <torusGeometry args={[0.3, 0.02, 8, 16]} />
+            <meshStandardMaterial color="#B8860B" />
+          </mesh>
+          {/* Blocking effect */}
+          <mesh position={[0, 0, 0.03]}>
+            <circleGeometry args={[0.35, 16]} />
+            <meshStandardMaterial color="#87CEEB" opacity={0.3} transparent />
+          </mesh>
+        </group>
+      )}
     </group>
   );
 }

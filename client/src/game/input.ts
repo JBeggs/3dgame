@@ -3,6 +3,8 @@ export type InputState = {
   right: number;
   jump: boolean;
   action: boolean;
+  grenade: boolean;  // G key - throw grenade
+  block: boolean;    // F key - pan block
 };
 
 type InputAPI = {
@@ -12,6 +14,8 @@ type InputAPI = {
   setVector: (right: number, forward: number) => void;
   setJump: (v: boolean) => void;
   setAction: (v: boolean) => void;
+  setGrenade: (v: boolean) => void;
+  setBlock: (v: boolean) => void;
 };
 
 let singleton: InputAPI | null = null;
@@ -19,7 +23,7 @@ let singleton: InputAPI | null = null;
 export function getInput(): InputAPI {
   if (singleton) return singleton;
 
-  const state: InputState = { forward: 0, right: 0, jump: false, action: false };
+  const state: InputState = { forward: 0, right: 0, jump: false, action: false, grenade: false, block: false };
   const keys = new Set<string>();
 
   function recalc() {
@@ -42,11 +46,11 @@ export function getInput(): InputAPI {
     }
     
     // Weapon switching
-    if (e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3') {
+    if (e.code === 'Digit1' || e.code === 'Digit2' || e.code === 'Digit3' || e.code === 'Digit4') {
       try {
         const combat = (window as any).gameApi?.getPlayerCombat?.() || null;
         if (combat) {
-          const weapons = ['magic', 'ricochet', 'explosive'];
+          const weapons = ['magic', 'ricochet', 'explosive', 'grenade'];
           const index = parseInt(e.code.slice(-1)) - 1;
           if (index >= 0 && index < weapons.length) {
             combat.setProjectileType(weapons[index]);
@@ -61,12 +65,16 @@ export function getInput(): InputAPI {
     keys.add(e.code);
     if (e.code === 'Space') state.jump = true;
     if (e.code === 'KeyE') state.action = true;
+    if (e.code === 'KeyG') state.grenade = true;
+    if (e.code === 'KeyF') state.block = true;
     recalc();
   }
   function onKeyUp(e: KeyboardEvent) {
     keys.delete(e.code);
     if (e.code === 'Space') state.jump = false;
     if (e.code === 'KeyE') state.action = false;
+    if (e.code === 'KeyG') state.grenade = false;
+    if (e.code === 'KeyF') state.block = false;
     recalc();
   }
 
@@ -81,6 +89,8 @@ export function getInput(): InputAPI {
   }
   // Optional: consumer can set action programmatically (e.g., touch button)
   function setAction(v: boolean) { state.action = v; }
+  function setGrenade(v: boolean) { state.grenade = v; }
+  function setBlock(v: boolean) { state.block = v; }
 
   // Gamepad support
   let gamepadInterval: number | null = null;
@@ -169,6 +179,8 @@ export function getInput(): InputAPI {
     setVector,
     setJump,
     setAction,
+    setGrenade,
+    setBlock,
   };
   return singleton;
 }

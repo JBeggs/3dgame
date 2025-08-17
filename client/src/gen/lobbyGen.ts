@@ -52,8 +52,8 @@ export function generateLobby(config: LobbyConfig): Grid {
 }
 
 export const defaultLobbyConfig: LobbyConfig = {
-  size: 'small', // Smaller lobby
-  theme: 'simple', // Force simple theme - no decorations  
+  size: 'large', // Larger lobby for player gathering
+  theme: 'simple', // Keep simple visuals
   hasEnemies: false, // No enemies
   hasPickups: false  // No pickups
 };

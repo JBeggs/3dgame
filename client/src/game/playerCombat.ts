@@ -4,12 +4,16 @@ import { getPhysics } from './physics';
 import { getAudio } from './audio';
 import { connect } from '../net/net';
 
-export type ProjectileType = 'magic' | 'ricochet' | 'explosive';
+export type ProjectileType = 'magic' | 'ricochet' | 'explosive' | 'grenade';
 
 export interface PlayerCombat {
   canAttack: () => boolean;
   performAttack: (targetDirection: THREE.Vector3) => void;
   performRangedAttack: (targetPos: THREE.Vector3) => void;
+  throwGrenade: (targetPos: THREE.Vector3) => void;
+  startBlocking: () => void;
+  stopBlocking: () => void;
+  isBlocking: () => boolean;
   getCooldownProgress: () => number; // 0-1 for UI
   getAmmo: () => number;
   reload: () => void;
@@ -32,6 +36,17 @@ class PlayerCombatManager {
   
   // Projectile type system
   private currentProjectileType: ProjectileType = 'magic';
+  
+  // Pan blocking system
+  private isBlockingState = false;
+  private blockCooldown = 1000; // 1 second cooldown after blocking
+  private lastBlockTime = 0;
+  
+  // Grenade system
+  private grenadeCount = 3;
+  private maxGrenades = 3;
+  private grenadeCooldown = 2000; // 2 seconds between grenades
+  private lastGrenadeTime = 0;
 
   canAttack(): boolean {
     const now = Date.now();
@@ -76,6 +91,11 @@ class PlayerCombatManager {
         options = { explosionRadius: 2.5, explosionDamage: 40 };
         damage = 15; // Lower direct hit damage, but area effect
         speed = 10; // Slower
+        break;
+      case 'grenade':
+        options = { explosionRadius: 3.0, explosionDamage: 50 };
+        damage = 5; // Very low direct hit damage, mainly area effect
+        speed = 8; // Arc trajectory
         break;
       case 'magic':
       default:
@@ -131,6 +151,80 @@ class PlayerCombatManager {
 
   getProjectileType(): ProjectileType {
     return this.currentProjectileType;
+  }
+  
+  // Grenade throwing system
+  throwGrenade(targetPos: THREE.Vector3): void {
+    const now = Date.now();
+    if (now - this.lastGrenadeTime < this.grenadeCooldown || this.grenadeCount <= 0 || this.isBlockingState) {
+      console.log('💣 Cannot throw grenade - on cooldown, out of grenades, or blocking');
+      return;
+    }
+    
+    const playerPos = getPhysics().playerBody.position;
+    const throwPos = new THREE.Vector3(playerPos.x, playerPos.y + 1.0, playerPos.z);
+    
+    // Create grenade projectile with arc trajectory
+    const projectileManager = getProjectileManager();
+    const direction = targetPos.clone().sub(throwPos).normalize();
+    direction.y += 0.3; // Add upward arc for grenade trajectory
+    
+    const projectileId = projectileManager.createProjectile(
+      throwPos,
+      targetPos,
+      8, // Slower speed for grenades
+      5, // Low direct damage
+      'grenade',
+      'player',
+      { explosionRadius: 3.0, explosionDamage: 50 }
+    );
+    
+    // Send grenade to network
+    const net = connect();
+    const velocity = direction.multiplyScalar(8);
+    
+    net.sendProjectileCreate({
+      id: projectileId,
+      x: throwPos.x, y: throwPos.y, z: throwPos.z,
+      vx: velocity.x, vy: velocity.y, vz: velocity.z,
+      type: 'grenade',
+      damage: 5,
+      lifetime: 0,
+      maxLifetime: 4, // Grenades explode after 4 seconds
+      explosionRadius: 3.0,
+      explosionDamage: 50
+    });
+    
+    this.grenadeCount--;
+    this.lastGrenadeTime = now;
+    getAudio().play('throw');
+    console.log(`💣 Grenade thrown! Remaining: ${this.grenadeCount}/${this.maxGrenades}`);
+  }
+  
+  // Pan blocking system
+  startBlocking(): void {
+    const now = Date.now();
+    if (now - this.lastBlockTime < this.blockCooldown) {
+      console.log('🛡️ Block on cooldown');
+      return;
+    }
+    
+    this.isBlockingState = true;
+    getAudio().play('block_start');
+    console.log('🛡️ Blocking started!');
+  }
+  
+  stopBlocking(): void {
+    if (this.isBlockingState) {
+      this.isBlockingState = false;
+      this.lastBlockTime = Date.now();
+      getAudio().play('block_end');
+      console.log('🛡️ Blocking stopped!');
+    }
+  }
+  
+  isBlocking(): boolean {
+    return this.isBlockingState;
   }
 
   reload(): void {
@@ -198,6 +292,10 @@ export function getPlayerCombat(): PlayerCombat {
     canAttack: () => combatManager!.canAttack(),
     performAttack: (dir) => combatManager!.performAttack(dir),
     performRangedAttack: (pos) => combatManager!.performRangedAttack(pos),
+    throwGrenade: (pos) => combatManager!.throwGrenade(pos),
+    startBlocking: () => combatManager!.startBlocking(),
+    stopBlocking: () => combatManager!.stopBlocking(),
+    isBlocking: () => combatManager!.isBlocking(),
     getCooldownProgress: () => combatManager!.getCooldownProgress(),
     getAmmo: () => combatManager!.getAmmo(),
     reload: () => combatManager!.reload(),

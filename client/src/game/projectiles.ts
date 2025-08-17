@@ -8,7 +8,7 @@ export interface Projectile {
   lifetime: number;
   maxLifetime: number;
   radius: number;
-  type: 'arrow' | 'fireball' | 'spit' | 'magic' | 'ricochet' | 'explosive';
+  type: 'arrow' | 'fireball' | 'spit' | 'magic' | 'ricochet' | 'explosive' | 'grenade';
   ownerId?: string; // To prevent self-damage
   
   // Advanced projectile properties

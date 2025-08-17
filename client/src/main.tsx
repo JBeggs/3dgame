@@ -58,9 +58,11 @@ function App() {
 const el = document.getElementById('root')!;
 createRoot(el).render(<App />);
 
-// Expose quick room join
+// Expose quick room APIs
 const net = connect();
 (window as any).netJoin = (room: string) => net.joinRoom(room);
+(window as any).netList = () => net.getRooms();
+(window as any).netCreate = (name: string) => net.createRoom(name);
 
 // Expose avatar API for console testing
 import { avatarStore } from './avatar/store';

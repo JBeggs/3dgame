@@ -158,27 +158,27 @@ export function AvatarRoot({
     };
   }, [cfg, assetLoader]);
   
-  // Animation system
-  useFrame((_, deltaTime) => {
-    if (mixerRef.current) {
-      mixerRef.current.update(deltaTime);
-    }
-  });
+  // Animation system - DISABLED for primitive shapes
+  // useFrame((_, deltaTime) => {
+  //   if (mixerRef.current) {
+  //     mixerRef.current.update(deltaTime);
+  //   }
+  // });
   
-  // Simple movement-based animation state machine
-  const [lastPosition, setLastPosition] = useState(new THREE.Vector3(...position));
-  useEffect(() => {
-    const currentPos = new THREE.Vector3(...position);
-    const movement = currentPos.distanceTo(lastPosition);
-    
-    if (movement > 0.1) {
-      switchAnimation('run');
-    } else {
-      switchAnimation('idle');
-    }
-    
-    setLastPosition(currentPos);
-  }, [position]);
+  // Movement-based animation state machine - DISABLED for primitive shapes
+  // const [lastPosition, setLastPosition] = useState(new THREE.Vector3(...position));
+  // useEffect(() => {
+  //   const currentPos = new THREE.Vector3(...position);
+  //   const movement = currentPos.distanceTo(lastPosition);
+  //   
+  //   if (movement > 0.1) {
+  //     switchAnimation('run');
+  //   } else {
+  //     switchAnimation('idle');
+  //   }
+  //   
+  //   setLastPosition(currentPos);
+  // }, [position]);
   
   function switchAnimation(newState: AnimationState) {
     if (newState === animationState) return;
@@ -201,33 +201,10 @@ export function AvatarRoot({
       <group position={position as any} rotation={[0, rotation, 0]}>
         {/* Render GLB parts or fallbacks */}
         
-        {/* Body (main mesh with animations) */}
-        {loadedParts.body ? (
-          <primitive object={loadedParts.body} />
-        ) : (
-          <AvatarFallback position={[0, 0, 0]} rotation={0} colors={cfg.colors} />
-        )}
+        {/* Body (main mesh with animations) - Force fallback for now */}
+        <AvatarFallback position={[0, 0, 0]} rotation={0} colors={cfg.colors} />
         
-        {/* Head (if separate from body) */}
-        {loadedParts.head && (
-          <primitive object={loadedParts.head} />
-        )}
-        
-        {/* Outfit/Clothing */}
-        {loadedParts.outfit && (
-          <primitive object={loadedParts.outfit} />
-        )}
-        
-        {/* Accessories */}
-        {Object.entries(loadedParts.accessories).map(([slot, accessory]) => 
-          accessory && (
-            <primitive 
-              key={slot} 
-              object={accessory} 
-              position={getAccessoryPosition(slot)}
-            />
-          )
-        )}
+        {/* Head, Outfit, Accessories - Disabled for now to force fallback working */}
         
         {/* Visual direction indicator */}
         <mesh position={[0, 0.5, 0.25]}>
@@ -298,12 +275,12 @@ function AvatarFallback({
         <meshStandardMaterial color={accent} />
       </mesh>
       
-      {/* Feet */}
-      <mesh position={[-0.1, -0.55, 0.05]} castShadow>
+      {/* Feet - Raised to sit on ground level */}
+      <mesh position={[-0.1, -0.45, 0.05]} castShadow>
         <boxGeometry args={[0.15, 0.1, 0.2]} />
         <meshStandardMaterial color={accessoryColor} />
       </mesh>
-      <mesh position={[0.1, -0.55, 0.05]} castShadow>
+      <mesh position={[0.1, -0.45, 0.05]} castShadow>
         <boxGeometry args={[0.15, 0.1, 0.2]} />
         <meshStandardMaterial color={accessoryColor} />
       </mesh>
@@ -441,11 +418,13 @@ export function NetworkedAvatarRoot({
   // For networked avatars, we use a simpler approach with just colors
   // The full GLB loading is handled by the main avatar system
   return (
-    <AvatarFallback 
-      position={position} 
-      rotation={rotation} 
-      colors={avatarConfig.colors}
-    />
+    <group position={position as any} rotation={[0, rotation, 0]}>
+      <AvatarFallback 
+        position={[0, 0, 0]} 
+        rotation={0} 
+        colors={avatarConfig.colors}
+      />
+    </group>
   );
 }
 

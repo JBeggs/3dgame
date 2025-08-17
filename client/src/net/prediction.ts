@@ -57,6 +57,9 @@ export class ClientPrediction {
     const timeSinceLastInput = this.inputHistory.length > 0 ? 
       now - this.inputHistory[this.inputHistory.length - 1].timestamp : 1000;
     
+    // DEBUG: Log prediction decisions
+    // quiet
+    
     if (hasInput || timeSinceLastInput > 100) { // Send at least every 100ms
       // Store input in history
       this.inputHistory.push(command);
@@ -66,6 +69,16 @@ export class ClientPrediction {
       
       // Send to server
       net.sendInputCommand(command);
+      
+      // FALLBACK: Also send direct position for multiplayer compatibility
+      // This ensures other players can see movement even if server doesn't process input commands
+      const physics = getPhysics();
+      const pos = physics.playerBody.position;
+      
+      // Debug log occasionally to confirm position sending
+      // quiet
+      
+      net.sendPosition(pos.x, pos.y, pos.z);
       
       return command;
     }

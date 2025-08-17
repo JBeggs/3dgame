@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, StatsGl, Text } from '@react-three/drei';
+import { OrbitControls, StatsGl } from '@react-three/drei';
 import { PlayerMesh } from '../game/player';
 import { useNet } from '../net/net';
 import { MapScene } from './MapScene';
@@ -24,6 +24,7 @@ import { AvatarRoot, NetworkedAvatarRoot } from '../avatar/Avatar';
 import { RemoteProjectileRenderer } from './RemoteProjectileRenderer';
 import { CombatFeedback } from './CombatFeedback';
 import { AvatarDressUpPanel } from './AvatarDressUpPanel';
+import { ClothingPanel } from './ClothingPanel';
 
 
 function Scene() {
@@ -40,22 +41,27 @@ function Scene() {
         <planeGeometry args={[20, 20]} />
         <meshStandardMaterial color="#2a2f39" />
       </mesh>
-      <gridHelper args={[20, 20, '#444', '#333']} />
+      {null}
       {/* Other players with enhanced nameplates */}
       {(() => {
         const otherPlayers = Array.from(net.players.values()).filter(p => p.id !== net.selfId);
-        // Debug rendering occasionally
-        if (Math.random() < 0.001) {
-          console.log(`🎮 Rendering ${otherPlayers.length} other players`);
-        }
+        
         return otherPlayers;
       })().map((p) => {
         const prev = net.playersPrev.get(p.id) || p;
         const dt = Math.max(16, net.tCurr - net.tPrev);
         const alpha = Math.min(1, (performance.now() - net.tCurr) / dt);
-        const ix = prev.x + (p.x - prev.x) * alpha;
-        const iy = prev.y + (p.y - prev.y) * alpha;
-        const iz = prev.z + (p.z - prev.z) * alpha;
+        let ix = prev.x + (p.x - prev.x) * alpha;
+        let iy = prev.y + (p.y - prev.y) * alpha;
+        let iz = prev.z + (p.z - prev.z) * alpha;
+
+        // Use interpolation for smooth remote movement
+        const SIMPLE_REMOTE = false;
+        if (SIMPLE_REMOTE) {
+          ix = p.x;
+          iy = p.y;
+          iz = p.z;
+        }
         
         // Interpolate rotation with proper angle wrapping
         const prevRot = prev.rotation || 0;
@@ -64,18 +70,8 @@ function Scene() {
         // Handle angle wrapping (shortest rotation path)
         if (rotDiff > Math.PI) rotDiff -= 2 * Math.PI;
         if (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
-        const rotation = prevRot + rotDiff * alpha;
-        
-        // Debug interpolated positions occasionally
-        if (Math.random() < 0.01) {
-          console.log(`🎮 Render Player ${p.id}:`, {
-            current: `${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}`,
-            previous: `${prev.x.toFixed(2)}, ${prev.y.toFixed(2)}, ${prev.z.toFixed(2)}`,
-            interpolated: `${ix.toFixed(2)}, ${iy.toFixed(2)}, ${iz.toFixed(2)}`,
-            alpha: alpha.toFixed(2),
-            dt: dt.toFixed(0)
-          });
-        }
+        let rotation = prevRot + rotDiff * alpha;
+        if (SIMPLE_REMOTE) rotation = currRot;
         
         const color = idToColor(p.id);
         
@@ -89,9 +85,10 @@ function Scene() {
         // rotation is now interpolated above
         
         return (
-          <group key={p.id} position={[ix, iy, iz]}>
-            {/* Player avatar with proper rotation and networked config */}
+          <group key={p.id}>
+            {/* Player avatar with proper position, rotation and networked config */}
             <NetworkedAvatarRoot 
+              position={[ix, iy + 0.6, iz]}
               rotation={rotation}
               config={net.playerAvatars.get(p.id)}
             />
@@ -110,10 +107,6 @@ function Scene() {
       {/* Remote projectiles from other players */}
       <RemoteProjectileRenderer />
       
-      {/* Quick lobby switcher */}
-      <group position={[0,2,0]}>
-        <Text position={[0,0,0]} fontSize={0.2} color={'#ccc'} anchorX="center">Use 1/2/3 to switch rooms</Text>
-      </group>
     </>
   );
 }
@@ -123,14 +116,15 @@ function Scene() {
 export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: boolean }) {
   const inv = useInventory();
   const won = inv.items.coin >= getCoinTarget();
+  const net = useNet();
   useEffect(() => {
     (window as any).gameApi = {
       setAvatar: (cfg: any) => avatarStore.set(cfg || {}),
     };
     const handler = (e: KeyboardEvent) => {
-      if (e.code === 'Digit1') (window as any).netJoin?.('default');
-      if (e.code === 'Digit2') (window as any).netJoin?.('room2');
-      if (e.code === 'Digit3') (window as any).netJoin?.('room3');
+      if (e.code === 'Digit1') (window as any).netJoin?.('lobby');
+      if (e.code === 'Digit2') (window as any).netCreate?.('Private Room');
+      if (e.code === 'Digit3') (window as any).netList?.();
     };
     window.addEventListener('keydown', handler);
     return () => { try { delete (window as any).gameApi; } catch {} };
@@ -149,6 +143,21 @@ export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: bo
       </Canvas>
       {/* Simplified UI for lobby testing */}
       <HUD />
+      {/* Current room indicator */}
+      <div style={{
+        position: 'fixed',
+        top: 12,
+        left: 12,
+        zIndex: 1000,
+        background: 'rgba(0,0,0,0.6)',
+        color: '#fff',
+        padding: '6px 10px',
+        borderRadius: 6,
+        fontSize: 12,
+        fontFamily: 'Arial, sans-serif'
+      }}>
+        Room: {net.currentRoom || 'lobby'}
+      </div>
       <TouchControls />
       
       {/* Hide complex panels for now - uncomment when needed */}
@@ -163,32 +172,12 @@ export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: bo
       <CombatFeedback />
       
       {/* Avatar dress-up system */}
-      <AvatarDressUpPanel />
+      {null}
       
-      {/* Simple lobby mode toggle */}
-      <div style={{
-        position: 'fixed',
-        bottom: 20,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 1000,
-        background: 'rgba(0, 0, 0, 0.8)',
-        color: 'white',
-        padding: '8px 16px',
-        borderRadius: '6px',
-        fontSize: '14px',
-        fontWeight: 'bold',
-        fontFamily: 'Arial, sans-serif'
-      }}>
-        🏃‍♂️ LOBBY MODE - Simple movement testing
-        <div style={{
-          fontSize: '11px',
-          opacity: 0.7,
-          marginTop: '4px'
-        }}>
-          Use WASD/arrows, space to jump, or touch controls
-        </div>
-      </div>
+      {/* Hide the old clothing panel since we integrated it into dress up panel */}
+      {/* <ClothingPanel /> */}
+      
+      {null}
     </div>
   );
 }

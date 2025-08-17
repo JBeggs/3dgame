@@ -23,11 +23,17 @@ rooms.set('lobby', {
 wss.on('connection', (ws) => {
   const id = nextId++;
   const defaultRoom = 'lobby';
+  // Compute a visible spawn position in lobby (circle around center)
+  const spawnRadius = 3.0;
+  const spawnAngle = ((id % 12) / 12) * Math.PI * 2;
+  const spawnX = Math.cos(spawnAngle) * spawnRadius;
+  const spawnZ = Math.sin(spawnAngle) * spawnRadius;
+
   clients.set(id, { 
     ws, 
-    x: 0, 
-    y: 0, 
-    z: 0, 
+    x: spawnX, 
+    y: 0.5, 
+    z: spawnZ, 
     rotation: 0,
     room: defaultRoom, 
     name: `Player${id}`,
@@ -62,6 +68,11 @@ wss.on('connection', (ws) => {
   // Update room count
   updateRoomCount(defaultRoom);
   
+  // Announce presence to lobby immediately so others can render us
+  broadcastToRoom(defaultRoom, { t: 'playerJoined', playerId: id, playerName: `Player${id}` });
+  // Immediately push a full players snapshot to everyone in this room
+  broadcastPlayersForRoom(defaultRoom);
+
   ws.send(JSON.stringify({ t: 'welcome', id }));
   // Send room list and initial players
   sendRoomList(id);
@@ -119,7 +130,7 @@ wss.on('connection', (ws) => {
           const BOUNDARY = 15;
           if (c.room === 'lobby') {
             if (Math.abs(c.x) > BOUNDARY || Math.abs(c.z) > BOUNDARY) {
-              console.log(`[anticheat] Player ${id} hit boundary at ${c.x.toFixed(1)}, ${c.z.toFixed(1)}`);
+              // boundary clamp (quiet)
               // Clamp to boundary
               c.x = Math.max(-BOUNDARY, Math.min(BOUNDARY, c.x));
               c.z = Math.max(-BOUNDARY, Math.min(BOUNDARY, c.z));
@@ -128,11 +139,11 @@ wss.on('connection', (ws) => {
         } else {
           // Reject the movement - use server authority
           c.invalidMoveCount++;
-          console.log(`[anticheat] Player ${id} invalid move: speed=${speed.toFixed(1)} (max=${MAX_SPEED}), dt=${deltaTime.toFixed(3)}s, count=${c.invalidMoveCount}`);
+          // invalid move (quiet)
           
           if (c.invalidMoveCount > 5) {
             // Too many invalid moves - reset to last known good position
-            console.log(`[anticheat] Player ${id} position reset - too many invalid moves`);
+            // quiet
             c.x = c.lastKnownValidPos.x;
             c.y = c.lastKnownValidPos.y; 
             c.z = c.lastKnownValidPos.z;
@@ -159,7 +170,7 @@ wss.on('connection', (ws) => {
         
         // Rate limiting
         if (timeSinceLastCombat < MIN_COMBAT_INTERVAL) {
-          console.log(`[anticheat] Player ${id} projectile spam blocked - ${timeSinceLastCombat}ms since last`);
+          // quiet spam log
           sendTo(id, { 
             t: 'combatError', 
             reason: 'Rate limited',
@@ -177,7 +188,7 @@ wss.on('connection', (ws) => {
         );
         
         if (distance > 3) {
-          console.log(`[anticheat] Player ${id} invalid projectile origin - distance ${distance.toFixed(1)}`);
+          // quiet invalid origin
           sendTo(id, { 
             t: 'combatError', 
             reason: 'Invalid projectile origin'
@@ -190,7 +201,7 @@ wss.on('connection', (ws) => {
         const MAX_PROJECTILE_SPEED = 20; // Maximum projectile velocity
         
         if (velocity > MAX_PROJECTILE_SPEED) {
-          console.log(`[anticheat] Player ${id} invalid projectile speed - ${velocity.toFixed(1)}`);
+          // quiet invalid speed
           sendTo(id, { 
             t: 'combatError', 
             reason: 'Invalid projectile velocity'
@@ -283,14 +294,14 @@ wss.on('connection', (ws) => {
           timestamp: now
         });
         
-        console.log(`[prediction] Processed input ${input.sequenceNumber} for player ${id} -> (${c.x.toFixed(1)}, ${c.y.toFixed(1)}, ${c.z.toFixed(1)})`);
+        // quiet processed input log
       } else if (msg.t === 'avatarUpdate') {
         const c = clients.get(id);
         if (!c || !msg.config) return;
         
         // Update player's avatar configuration
         c.avatarConfig = { ...c.avatarConfig, ...msg.config };
-        console.log(`[avatar] Player ${id} updated avatar config:`, c.avatarConfig);
+        // quiet avatar log
         
         // Broadcast avatar update to all other players in the room
         broadcastToRoom(c.room, {
@@ -335,6 +346,14 @@ wss.on('connection', (ws) => {
       // Only change if different
       if (oldRoom !== newRoom) {
         c.room = newRoom;
+        // Reposition on lobby join to a spawn pad for visibility
+        if (newRoom === 'lobby') {
+          const r = 3.0;
+          const angle = ((id % 12) / 12) * Math.PI * 2;
+          c.x = Math.cos(angle) * r;
+          c.y = 0.5;
+          c.z = Math.sin(angle) * r;
+        }
         
         // Update room counts
         updateRoomCount(oldRoom);
@@ -346,7 +365,9 @@ wss.on('connection', (ws) => {
         // Send presence notifications
         broadcastToRoom(oldRoom, { t: 'playerLeft', playerId: id, playerName: c.name });
         broadcastToRoom(newRoom, { t: 'playerJoined', playerId: id, playerName: c.name });
-        
+        // Immediately ensure everyone in the new room has a fresh snapshot
+        broadcastPlayersForRoom(newRoom);
+
         sendPlayersFor(id);
         sendTo(id, { t: 'joinSuccess', room: newRoom });
         console.log(`[room] Player ${id} (${c.name}) moved from ${oldRoom} to ${newRoom}`);
@@ -447,7 +468,7 @@ wss.on('connection', (ws) => {
 
 // Server-side projectile and game state update loop
 setInterval(() => {
-  const deltaTime = 0.1; // 100ms update interval
+  const deltaTime = 0.05; // 50ms update interval (20Hz)
   const now = Date.now();
   
   // Update server-side projectiles
@@ -525,7 +546,7 @@ setInterval(() => {
   
   // Broadcast players and projectiles snapshot per room at 10Hz
   for (const [id, c] of clients) {
-    // Player list with health
+    // Player list with health and speed (to indicate movement)
     const playerList = [...clients.entries()]
       .filter(([pid, cc]) => cc.room === c.room)
       .map(([pid, cc]) => ({ 
@@ -534,6 +555,7 @@ setInterval(() => {
         y: cc.y, 
         z: cc.z, 
         rotation: cc.rotation,
+        speed: cc.speed,
         health: cc.health,
         maxHealth: cc.maxHealth
       }));
@@ -560,7 +582,7 @@ setInterval(() => {
       sendTo(id, { t: 'projectiles', list: projectileList });
     }
   }
-}, 100);
+}, 50);
 
 function broadcast(obj) {
   const json = JSON.stringify(obj);
@@ -582,6 +604,14 @@ function sendPlayersFor(id) {
     .filter(([pid, cc]) => cc.room === c.room)
     .map(([pid, cc]) => ({ id: pid, x: cc.x, y: cc.y, z: cc.z, rotation: cc.rotation, name: cc.name }));
   sendTo(id, { t: 'players', list });
+}
+
+// Broadcast a players snapshot to all clients in a specific room (useful on join)
+function broadcastPlayersForRoom(roomId) {
+  const idsInRoom = [...clients.entries()].filter(([pid, cc]) => cc.room === roomId).map(([pid]) => pid);
+  for (const pid of idsInRoom) {
+    sendPlayersFor(pid);
+  }
 }
 
 function updateRoomCount(roomId) {
