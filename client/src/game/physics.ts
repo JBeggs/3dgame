@@ -32,7 +32,8 @@ export function getPhysics(): PhysicsAPI {
   const radius = 0.4;
   const playerBody = new CANNON.Body({ mass: 1, linearDamping: 0.2, angularDamping: 1 });
   playerBody.addShape(new CANNON.Sphere(radius));
-  playerBody.position.set(0, radius + 0.01, 0);
+  // Don't set position here - let map generation place the player safely
+  playerBody.position.set(0, 100, 0); // Start high above map until proper spawn is set
   world.addBody(playerBody);
 
   function step(dt: number) {

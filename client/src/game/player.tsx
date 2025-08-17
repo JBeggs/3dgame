@@ -134,12 +134,14 @@ export function PlayerMesh() {
     */
   });
 
-  const ref = useRef<THREE.Mesh>(null!);
+  const ref = useRef<THREE.Group>(null!);
   const { camera } = useThree();
 
   useFrame(() => {
     const p = physics.playerBody.position;
-    ref.current.position.set(p.x, p.y, p.z);
+    if (ref.current) {
+      ref.current.position.set(p.x, p.y, p.z);
+    }
     setPlayerPos(p.x, p.z);
     // simple chase cam
     const camOffset = new THREE.Vector3(4, 3, 6);
@@ -149,7 +151,7 @@ export function PlayerMesh() {
 
   return (
     <group ref={ref}>
-      <AvatarRoot rotation={avatarRotation} />
+      <AvatarRoot position={[0, 0, 0]} rotation={avatarRotation} />
     </group>
   );
 }

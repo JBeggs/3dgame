@@ -98,11 +98,25 @@ export function MapScene() {
       const pz = (bestY + 0.5) * cellSize;
       const body = phys.playerBody;
       console.log('Spawning player at:', { x: px, y: 0.6, z: pz, bestScore });
+      
+      // Force position update multiple times to ensure it takes
       body.position.set(px, 0.6, pz);
       body.velocity.set(0, 0, 0);
+      body.angularVelocity.set(0, 0, 0);
+      
+      // Additional safety - teleport again after a short delay
+      setTimeout(() => {
+        body.position.set(px, 0.6, pz);
+        body.velocity.set(0, 0, 0);
+        body.angularVelocity.set(0, 0, 0);
+        console.log('Player position reinforced:', body.position);
+      }, 100);
+      
       console.log('Player body positioned:', body.position);
     }
-    placeSpawn();
+    
+    // Wait a frame for physics to be ready, then place spawn
+    setTimeout(() => placeSpawn(), 0);
     
     // Debug toggle for nav grid and manual respawn
     const handleKeyPress = (e: KeyboardEvent) => {

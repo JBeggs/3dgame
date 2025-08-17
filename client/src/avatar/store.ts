@@ -22,7 +22,7 @@ export type AvatarConfig = {
 
 const DEFAULT: AvatarConfig = {
   bodyId: 'bodyA',
-  headId: 'headA',
+  headId: '',
   outfitId: 'robeA',
   colors: { 
     primary: '#a0c8ff', 
@@ -91,17 +91,17 @@ export const avatarStore = {
   presets: {
     presetA: { 
       bodyId: 'bodyA', 
-      headId: 'headA', 
+      headId: '', 
       outfitId: 'robeA', 
       colors: { primary: '#a0c8ff', secondary: '#4a3070', accent: '#ff6b6b', accessory: '#ffd93d' },
       accessories: {}
     } as AvatarConfig,
     presetB: { 
       bodyId: 'bodyB', 
-      headId: 'headB', 
-      outfitId: 'robeB', 
+      headId: '', 
+      outfitId: '', 
       colors: { primary: '#ffd54a', secondary: '#332255', accent: '#ff4757', accessory: '#2ed573' },
-      accessories: { hat: 'wizardHat', cape: 'magicCape' }
+      accessories: {}
     } as AvatarConfig,
   },
 };
