@@ -18,9 +18,11 @@ export function getPhysics(): PhysicsAPI {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
   world.broadphase = new CANNON.SAPBroadphase(world);
   world.allowSleep = true;
-  // Make movement less sticky
-  world.defaultContactMaterial.friction = 0.1;
+  // Optimize contact material for stable ground contact
+  world.defaultContactMaterial.friction = 0.3;
   world.defaultContactMaterial.restitution = 0.0;
+  world.defaultContactMaterial.contactEquationStiffness = 1e8;
+  world.defaultContactMaterial.contactEquationRelaxation = 3;
 
   // Ground plane
   const ground = new CANNON.Body({ mass: 0 });
@@ -28,16 +30,36 @@ export function getPhysics(): PhysicsAPI {
   ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
   world.addBody(ground);
 
-  // Player: simple sphere controller
+  // Player: simple sphere with natural physics
   const radius = 0.4;
-  const playerBody = new CANNON.Body({ mass: 1, linearDamping: 0.2, angularDamping: 1 });
-  playerBody.addShape(new CANNON.Sphere(radius));
+  const playerBody = new CANNON.Body({ 
+    mass: 1, 
+    linearDamping: 0.1, // Let physics work naturally
+    angularDamping: 0.1,
+    type: CANNON.Body.DYNAMIC,
+    material: new CANNON.Material({ friction: 0.3, restitution: 0.0 })
+  });
+  
+  // Use sphere - most stable for ground contact
+  const sphereShape = new CANNON.Sphere(radius);
+  playerBody.addShape(sphereShape);
+  
   // Don't set position here - let map generation place the player safely
   playerBody.position.set(0, 100, 0); // Start high above map until proper spawn is set
   world.addBody(playerBody);
 
   function step(dt: number) {
-    world.step(1 / 60, dt, 3);
+    // Use fixed timestep for maximum stability
+    const fixedStep = 1 / 60; // Fixed 60fps timestep
+    const maxSubsteps = 2; // Fewer substeps to reduce jitter
+    
+    world.step(fixedStep, dt, maxSubsteps);
+    
+    // Match server ground collision logic exactly
+    if (playerBody.position.y <= 0.5) {
+      playerBody.position.y = 0.5;
+      playerBody.velocity.y = Math.max(0, playerBody.velocity.y);
+    }
   }
 
   function addStaticBox(x: number, y: number, z: number, sx: number, sy: number, sz: number) {
@@ -52,15 +74,17 @@ export function getPhysics(): PhysicsAPI {
   }
 
   function isGrounded(): boolean {
-    // Simple downward ray check under player
+    // Ray check from sphere bottom
     const from = new CANNON.Vec3(playerBody.position.x, playerBody.position.y, playerBody.position.z);
-    const to = new CANNON.Vec3(playerBody.position.x, playerBody.position.y - 0.7, playerBody.position.z);
+    const to = new CANNON.Vec3(playerBody.position.x, playerBody.position.y - (radius + 0.1), playerBody.position.z);
     const result = new CANNON.RaycastResult();
     const hit = world.raycastClosest(from, to, { skipBackfaces: true }, result);
     if (!hit) return false;
     // Up-facing normal implies ground-like surface
     return result.hitNormalWorld.y > 0.5;
   }
+  
+  // No ground stabilization - let physics handle it naturally
   
   // Server position correction method
   function correctPosition(x: number, y: number, z: number) {

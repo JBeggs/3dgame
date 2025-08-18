@@ -119,7 +119,9 @@ export function TouchControls() {
         const normalizedX = dx / Math.max(originalMag, 0.001);
         const normalizedY = dy / Math.max(originalMag, 0.001);
         targetInput.current.x = normalizedX * finalMag;
-        targetInput.current.y = -normalizedY * finalMag; // Invert Y for game coordinates
+        // Invert forward/back if requested via global flag
+        const invertMoveY = !!(window as any)?.gameControls?.invertMoveY;
+        targetInput.current.y = (invertMoveY ? 1 : -1) * normalizedY * finalMag; // up -> forward by default
         // Only log significant touch input changes
         if (Math.abs(targetInput.current.x) > 0.1 || Math.abs(targetInput.current.y) > 0.1) {
           console.log('📱 Touch:', { 
@@ -260,6 +262,32 @@ export function TouchControls() {
           }}
         />
       </div>
+      {/* Camera toggle (mobile/desktop) */}
+      <button
+        onTouchStart={(e) => { e.preventDefault(); try { (window as any).gameCamera?.toggle?.(); } catch {} }}
+        onTouchEnd={(e) => { e.preventDefault(); }}
+        onMouseDown={(e) => { e.preventDefault(); try { (window as any).gameCamera?.toggle?.(); } catch {} }}
+        onMouseUp={(e) => { e.preventDefault(); }}
+        style={{ 
+          position: 'fixed',
+          right: 16,
+          bottom: 'calc(190px + env(safe-area-inset-bottom))',
+          width: 90,
+          height: 42,
+          borderRadius: 8,
+          background: 'rgba(255,255,255,0.08)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.2)',
+          zIndex: 1000,
+          pointerEvents: 'auto' as any,
+          touchAction: 'manipulation',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          fontSize: '10px',
+          fontWeight: 'bold'
+        }}
+      >Toggle Cam</button>
       <button
         ref={jumpRef}
         onMouseDown={(e) => { e.preventDefault(); getInput().setJump(true); }}
@@ -322,6 +350,49 @@ export function TouchControls() {
           backfaceVisibility: 'hidden' as any
         }}
       >Action</button>
+
+      {/* Invert toggles (optional) */}
+      <button
+        onMouseDown={(e) => { e.preventDefault(); try { (window as any).gameCamera?.toggle?.(); } catch {} }}
+        onMouseUp={(e) => { e.preventDefault(); }}
+        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); try { (window as any).gameCamera?.toggle?.(); } catch {} }}
+        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        style={{ 
+          position: 'fixed',
+          right: 16,
+          bottom: 'calc(150px + env(safe-area-inset-bottom))',
+          width: 90,
+          height: 36,
+          borderRadius: 8,
+          background: 'rgba(255,255,255,0.08)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.2)',
+          zIndex: 1000,
+          fontSize: '10px',
+          fontWeight: 'bold'
+        }}
+      >Toggle Cam</button>
+
+      <button
+        onMouseDown={(e) => { e.preventDefault(); const w:any = window as any; if (!w.gameControls) w.gameControls={}; w.gameControls.invertMoveY = !w.gameControls.invertMoveY; }}
+        onMouseUp={(e) => { e.preventDefault(); }}
+        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); const w:any = window as any; if (!w.gameControls) w.gameControls={}; w.gameControls.invertMoveY = !w.gameControls.invertMoveY; }}
+        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        style={{ 
+          position: 'fixed',
+          left: 170,
+          bottom: 'calc(30px + env(safe-area-inset-bottom))',
+          width: 100,
+          height: 36,
+          borderRadius: 8,
+          background: 'rgba(255,255,255,0.08)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.2)',
+          zIndex: 1000,
+          fontSize: '10px',
+          fontWeight: 'bold'
+        }}
+      >Invert Move</button>
       
       {/* iOS Debug indicator */}
       <div style={{

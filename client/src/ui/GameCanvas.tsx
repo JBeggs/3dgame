@@ -63,6 +63,8 @@ function Scene() {
           iz = p.z;
         }
         
+        // Remote player coordinate system is working correctly
+        
         // Interpolate rotation with proper angle wrapping
         const prevRot = prev.rotation || 0;
         const currRot = p.rotation || 0;

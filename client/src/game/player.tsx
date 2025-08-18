@@ -33,6 +33,59 @@ export function PlayerMesh() {
   const prediction = useMemo(() => getClientPrediction(), []);
   const [avatarRotation, setAvatarRotation] = useState(0);
   const [useModularAvatar, setUseModularAvatar] = useState(false); // TEMP: Use old system until we debug
+  const [cameraMode, setCameraMode] = useState<'third' | 'first'>('third');
+  const [yaw, setYaw] = useState(0);
+  const [pitch, setPitch] = useState(0);
+  const smoothYawRef = useRef(0); // use ref to avoid per-frame state re-render
+  const smoothCameraYRef = useRef(0); // Smooth Y position for camera to prevent jump jitter
+  const lookActiveRef = useRef(false);
+  // Model forward offset (0 = face exactly the input heading)
+  const AVATAR_FORWARD_OFFSET = 0;
+
+  // Expose a simple camera API for UI/mobile controls
+  useEffect(() => {
+    const win: any = window as any;
+    win.gameCamera = win.gameCamera || {};
+    win.gameCamera.toggle = () => setCameraMode((m: 'third' | 'first') => (m === 'third' ? 'first' : 'third'));
+    // Controls preferences
+    win.gameControls = win.gameControls || { invertLookY: true };
+    win.gameControls.toggleInvertLook = () => { win.gameControls.invertLookY = !win.gameControls.invertLookY; };
+    return () => {
+      try { if (win.gameCamera) delete win.gameCamera; } catch {}
+    };
+  }, []);
+
+  // Toggle camera mode with V; simple mouse-look while held (left button) in first-person
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'KeyV') setCameraMode((m) => (m === 'third' ? 'first' : 'third'));
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      if (cameraMode === 'first' && e.button === 0) lookActiveRef.current = true;
+    };
+    const onMouseUp = (e: MouseEvent) => {
+      if (e.button === 0) lookActiveRef.current = false;
+    };
+    const onMouseMove = (e: MouseEvent) => {
+      if (cameraMode === 'first' && lookActiveRef.current) {
+        const win: any = window as any;
+        const invertY = !!win?.gameControls?.invertLookY;
+        setYaw((prev) => prev + e.movementX * 0.003);
+        const dy = (invertY ? 1 : -1) * e.movementY * 0.003;
+        setPitch((prev) => Math.max(-0.9, Math.min(0.9, prev + dy)));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mousemove', onMouseMove);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mousemove', onMouseMove);
+    };
+  }, [cameraMode]);
 
   useFrame((_, dt) => {
     const { playerBody } = physics;
@@ -43,12 +96,23 @@ export function PlayerMesh() {
     const speed = 5.5;
     if (move.lengthSq() > 1) move.normalize();
     
-    // Fix floating point precision issues - use proper threshold
+    // Fix floating point precision issues - use proper threshold  
     const threshold = 0.01; // Ignore tiny gamepad/touch drift
     const hasRealInput = Math.abs(input.state.right) > threshold || Math.abs(input.state.forward) > threshold || input.state.jump;
     
     // no console spam
+
+    // Publish camera and facing state for movement system
+    (window as any).gameCameraMode = cameraMode;
+    // Use smoothed yaw in first-person to match actual camera look direction for rendering
+    (window as any).gameCameraYaw = cameraMode === 'first' ? (smoothYawRef.current || yaw) : yaw;
+    // Publish avatar facing yaw so first-person movement can follow body orientation
+    (window as any).gameFacingYaw = avatarRotation;
     
+    // RESTORE THIRD-PERSON WORKING VECTORS
+    (window as any).gameForwardVec = { x: 0, z: -1 }; // Back to working third-person
+    (window as any).gameRightVec = { x: 1, z: 0 };
+
     // CLIENT PREDICTION: Send input to prediction system instead of direct physics
     const inputCommand = prediction.sendInput(net);
     
@@ -92,15 +156,40 @@ export function PlayerMesh() {
     // Update combat system
     updatePlayerCombat();
     
-    // Update avatar rotation based on movement
-    const movementSpeed = Math.hypot(playerBody.velocity.x, playerBody.velocity.z);
-    if (movementSpeed > 0.1) {
-      // Calculate angle to face movement direction
-      // Avatar's default front is positive Z, so we need to adjust the calculation
-      const angle = Math.atan2(playerBody.velocity.x, playerBody.velocity.z);
-      setAvatarRotation(angle);
-      
-      //
+    // Update avatar rotation using camera-relative world vector
+    const rIn = input.state.right;
+    const fIn = input.state.forward;
+    const hasInput = Math.abs(rIn) > 0.01 || Math.abs(fIn) > 0.01;
+
+    const camYaw = (window as any).gameCameraYaw || 0;
+    const camMode: 'first' | 'third' = (window as any).gameCameraMode === 'first' ? 'first' : 'third';
+
+    if (camMode === 'first') {
+      // First-person steering: use left/right to gently turn body, no sudden spins
+      const turnRate = 2.0; // rad/s max
+      // Invert lateral so pressing left (A/left stick) turns left intuitively
+      const steerInput = -rIn; // [-1,1]
+      const deltaYaw = Math.max(-turnRate * dt, Math.min(turnRate * dt, steerInput * turnRate * dt));
+      const newYaw = avatarRotation + deltaYaw;
+      setAvatarRotation(newYaw);
+      (window as any).lastInputHeadingYaw = newYaw;
+    } else if (hasInput) {
+      // Third-person: face movement direction but clamp turn rate to avoid drastic spins
+      const c = Math.cos(camYaw);
+      const s = Math.sin(camYaw);
+      const worldX = rIn * c - fIn * s;
+      const worldZ = -rIn * s - fIn * c;
+      const desiredYaw = Math.atan2(worldX, worldZ);
+
+      // Smooth rotation with max angular velocity
+      const delta = Math.atan2(Math.sin(desiredYaw - avatarRotation), Math.cos(desiredYaw - avatarRotation));
+      const maxTurnRate = 2.0; // rad/s
+      const step = Math.max(-maxTurnRate * dt, Math.min(maxTurnRate * dt, delta));
+      const smoothedYaw = avatarRotation + step;
+      setAvatarRotation(smoothedYaw);
+      (window as any).lastInputHeadingYaw = smoothedYaw;
+    } else if ((window as any).lastInputHeadingYaw !== undefined) {
+      setAvatarRotation((window as any).lastInputHeadingYaw);
     }
     
     //
@@ -129,22 +218,45 @@ export function PlayerMesh() {
   useFrame(() => {
     const p = physics.playerBody.position;
     if (ref.current) {
-      // Add Y offset to lift avatar so feet touch ground, and smooth the movement to prevent jumping
-      ref.current.position.lerp(new THREE.Vector3(p.x, p.y + 0.6, p.z), 0.1);
+      // Direct position update - no interpolation to prevent jitter
+      ref.current.position.set(p.x, p.y + 0.6, p.z);
     }
     setPlayerPos(p.x, p.z);
-    // simple chase cam
-    const camOffset = new THREE.Vector3(4, 3, 6);
-    camera.position.lerp(new THREE.Vector3(p.x, p.y, p.z).add(camOffset), 0.1);
-    camera.lookAt(p.x, p.y + 0.5, p.z);
+    if (cameraMode === 'first') {
+      const head = new THREE.Vector3(p.x, p.y + 1.5, p.z);
+      camera.position.lerp(head, 0.25);
+      
+      // First-person camera - smoothly face movement direction for mobile (no per-frame state set)
+      const currentHasInput = Math.abs(input.state.right) > 0.01 || Math.abs(input.state.forward) > 0.01;
+      const targetYaw = currentHasInput ? avatarRotation : smoothYawRef.current;
+      
+      // Smooth camera rotation (shortest path)
+      let deltaYaw = targetYaw - smoothYawRef.current;
+      if (deltaYaw > Math.PI) deltaYaw -= 2 * Math.PI;
+      if (deltaYaw < -Math.PI) deltaYaw += 2 * Math.PI;
+      smoothYawRef.current = smoothYawRef.current + deltaYaw * 0.1;
+      
+      const dir = new THREE.Vector3(Math.sin(smoothYawRef.current), 0, Math.cos(smoothYawRef.current));
+      const look = head.clone().add(dir.multiplyScalar(10));
+      camera.lookAt(look);
+    } else {
+      // simple chase cam with reduced interpolation
+      const camOffset = new THREE.Vector3(4, 3, 6);
+      const targetPos = new THREE.Vector3(p.x, p.y, p.z).add(camOffset);
+      camera.position.lerp(targetPos, 0.2); // Faster interpolation to reduce lag
+      camera.lookAt(p.x, p.y + 0.5, p.z);
+    }
   });
 
   return (
     <group ref={ref}>
-      {useModularAvatar ? (
-        <ModularAvatarRoot position={[0, 0, 0]} rotation={avatarRotation} />
-      ) : (
-        <AvatarRoot position={[0, 0, 0]} rotation={avatarRotation} />
+      {/* Hide avatar in first-person mode to prevent blocking view */}
+      {cameraMode !== 'first' && (
+        useModularAvatar ? (
+          <ModularAvatarRoot position={[0, 0, 0]} rotation={avatarRotation} />
+        ) : (
+          <AvatarRoot position={[0, 0, 0]} rotation={avatarRotation} />
+        )
       )}
       
       {/* Pan blocking shield indicator */}
