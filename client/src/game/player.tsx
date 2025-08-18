@@ -37,6 +37,7 @@ export function PlayerMesh() {
   const [yaw, setYaw] = useState(0);
   const [pitch, setPitch] = useState(0);
   const smoothYawRef = useRef(0); // use ref to avoid per-frame state re-render
+  const smoothCameraYRef = useRef(0); // Smooth Y position for camera to prevent jump jitter
   const lookActiveRef = useRef(false);
   // Model forward offset (0 = face exactly the input heading)
   const AVATAR_FORWARD_OFFSET = 0;
@@ -95,7 +96,7 @@ export function PlayerMesh() {
     const speed = 5.5;
     if (move.lengthSq() > 1) move.normalize();
     
-    // Fix floating point precision issues - use proper threshold
+    // Fix floating point precision issues - use proper threshold  
     const threshold = 0.01; // Ignore tiny gamepad/touch drift
     const hasRealInput = Math.abs(input.state.right) > threshold || Math.abs(input.state.forward) > threshold || input.state.jump;
     
@@ -152,47 +153,27 @@ export function PlayerMesh() {
     // Update combat system
     updatePlayerCombat();
     
-    // Update avatar rotation
-    const movementSpeed = Math.hypot(playerBody.velocity.x, playerBody.velocity.z);
-    // Avatar rotation - COMPLETELY SEPARATE for each mode
+    // Update avatar rotation using camera-relative world vector
     const rIn = input.state.right;
     const fIn = input.state.forward;
     const hasInput = Math.abs(rIn) > 0.01 || Math.abs(fIn) > 0.01;
-    
+
     if (hasInput) {
-      let targetYaw = 0;
-      
-      if (cameraMode === 'first') {
-        // FIRST-PERSON: Face the direction you're walking
-        if (fIn > 0.5) {
-          targetYaw = 0; // W key - face forward (0 degrees)
-        } else if (fIn < -0.5) {
-          targetYaw = Math.PI; // S key - face backward (180 degrees)
-        } else if (rIn > 0.5) {
-          targetYaw = Math.PI / 2; // D key - face right (90 degrees)
-        } else if (rIn < -0.5) {
-          targetYaw = -Math.PI / 2; // A key - face left (-90 degrees)
-        } else {
-          targetYaw = Math.atan2(rIn, fIn); // Diagonal movement
-        }
-      } else {
-        // THIRD-PERSON: Fix avatar facing - flip forward to face correct direction
-        const inputMagnitude = Math.hypot(rIn, fIn);
-        let desiredYaw = (window as any).lastInputHeadingYaw ?? avatarRotation;
-        if (inputMagnitude > 0.2) {
-          desiredYaw = Math.atan2(rIn, -fIn);
-        }
-        // Smooth rotation to reduce jumpiness (shortest angular path, frame-rate independent)
-        const delta = Math.atan2(Math.sin(desiredYaw - avatarRotation), Math.cos(desiredYaw - avatarRotation));
-        const smoothingRate = 10; // higher = faster response
-        const smoothedYaw = avatarRotation + delta * Math.min(1, smoothingRate * dt);
-        setAvatarRotation(smoothedYaw);
-        (window as any).lastInputHeadingYaw = smoothedYaw;
-        return; // prevent the generic set below from double-setting
-      }
-      
-      setAvatarRotation(targetYaw);
-      (window as any).lastInputHeadingYaw = targetYaw;
+      const camYaw = (window as any).gameCameraYaw || 0;
+      const cosYaw = Math.cos(camYaw);
+      const sinYaw = Math.sin(camYaw);
+      // Match prediction mapping: W => -Z when yaw=0
+      const worldX = rIn * cosYaw - fIn * sinYaw;
+      const worldZ = -rIn * sinYaw - fIn * cosYaw;
+
+      let desiredYaw = Math.atan2(worldX, worldZ) + Math.PI;
+
+      // Smooth rotation (shortest angular path)
+      const delta = Math.atan2(Math.sin(desiredYaw - avatarRotation), Math.cos(desiredYaw - avatarRotation));
+      const smoothingRate = 10;
+      const smoothedYaw = avatarRotation + delta * Math.min(1, smoothingRate * dt);
+      setAvatarRotation(smoothedYaw);
+      (window as any).lastInputHeadingYaw = smoothedYaw;
     } else if ((window as any).lastInputHeadingYaw !== undefined) {
       setAvatarRotation((window as any).lastInputHeadingYaw);
     }
@@ -223,8 +204,8 @@ export function PlayerMesh() {
   useFrame(() => {
     const p = physics.playerBody.position;
     if (ref.current) {
-      // Add Y offset to lift avatar so feet touch ground, and smooth the movement to prevent jumping
-      ref.current.position.lerp(new THREE.Vector3(p.x, p.y + 0.6, p.z), 0.1);
+      // Direct position update - no interpolation to prevent jitter
+      ref.current.position.set(p.x, p.y + 0.6, p.z);
     }
     setPlayerPos(p.x, p.z);
     if (cameraMode === 'first') {
@@ -245,9 +226,10 @@ export function PlayerMesh() {
       const look = head.clone().add(dir.multiplyScalar(10));
       camera.lookAt(look);
     } else {
-      // simple chase cam
+      // simple chase cam with reduced interpolation
       const camOffset = new THREE.Vector3(4, 3, 6);
-      camera.position.lerp(new THREE.Vector3(p.x, p.y, p.z).add(camOffset), 0.1);
+      const targetPos = new THREE.Vector3(p.x, p.y, p.z).add(camOffset);
+      camera.position.lerp(targetPos, 0.2); // Faster interpolation to reduce lag
       camera.lookAt(p.x, p.y + 0.5, p.z);
     }
   });

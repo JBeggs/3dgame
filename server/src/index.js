@@ -30,6 +30,7 @@ wss.on('connection', (ws) => {
   const spawnZ = Math.sin(spawnAngle) * spawnRadius;
 
   clients.set(id, { 
+    id: id, // Add ID to client object for proper tracking
     ws, 
     x: spawnX, 
     y: 0.5, 
@@ -215,6 +216,8 @@ wss.on('connection', (ws) => {
         const c = clients.get(id);
         if (!c || !msg.input) return;
         
+        // Player ID is now properly set during client creation
+        
         // Process input command for client prediction
         const input = msg.input;
         const now = Date.now();
@@ -236,12 +239,25 @@ wss.on('connection', (ws) => {
         
         const speed = 5.5;
         const targetVx = rightInput * speed;
-        const targetVz = -forwardInput * speed;
-        const accel = 20;
+        const targetVz = forwardInput * speed;  // Fixed: Remove negative sign to match client
         
-        // Apply acceleration
-        c.velocity.x += (targetVx - c.velocity.x) * Math.min(1, accel * deltaTime);
-        c.velocity.z += (targetVz - c.velocity.z) * Math.min(1, accel * deltaTime);
+        // Player ID now properly set during client creation
+        
+        // Gentle acceleration for smooth movement (matching client)
+        const accel = 25; // High acceleration for responsiveness
+        const lerpFactor = Math.min(1, accel * deltaTime);
+        
+        // Apply velocity changes
+        c.velocity.x += (targetVx - c.velocity.x) * lerpFactor;
+        c.velocity.z += (targetVz - c.velocity.z) * lerpFactor;
+        
+        // Clean stop when no input
+        if (Math.abs(targetVx) < 0.01 && Math.abs(c.velocity.x) < 0.1) {
+          c.velocity.x = 0;
+        }
+        if (Math.abs(targetVz) < 0.01 && Math.abs(c.velocity.z) < 0.1) {
+          c.velocity.z = 0;
+        }
         
         // Apply jump (simplified server-side)
         if (input.jump && c.y <= 1) { // Simple ground check
@@ -255,6 +271,11 @@ wss.on('connection', (ws) => {
         const newX = c.x + c.velocity.x * deltaTime;
         const newY = Math.max(0.5, c.y + c.velocity.y * deltaTime); // Don't go below ground
         const newZ = c.z + c.velocity.z * deltaTime;
+        
+        // Position update logic working
+        
+        // Update current movement speed (horizontal velocity magnitude for other clients)
+        c.speed = Math.sqrt(c.velocity.x * c.velocity.x + c.velocity.z * c.velocity.z);
         
         // Boundary validation (same as position handler)
         const BOUNDARY = 15;

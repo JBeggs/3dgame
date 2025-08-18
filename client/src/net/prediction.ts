@@ -42,18 +42,18 @@ export class ClientPrediction {
     const forwardInput = Math.abs(input.state.forward) > 0.01 ? input.state.forward : 0;
     const win: any = (typeof window !== 'undefined') ? (window as any) : {};
 
-    // SEPARATE MOVEMENT LOGIC PER VIEW (preserve separation, unify behavior)
-    let worldX: number;
-    let worldZ: number;
-    if (win.gameCameraMode === 'first') {
-      // First-person: world-relative; fix left/right inversion and keep W forward
-      worldX = -rightInput;
-      worldZ = -forwardInput;
-    } else {
-      // Third-person: world-relative; W forward, L/R normal (fix inversion)
-      worldX = rightInput;
-      worldZ = forwardInput;
-    }
+    // Transform input by camera yaw so movement is camera-relative, but expressed in world axes
+    const camYaw: number = (typeof window !== 'undefined' && (window as any).gameCameraYaw != null)
+      ? (window as any).gameCameraYaw
+      : 0;
+    const cosYaw = Math.cos(camYaw);
+    const sinYaw = Math.sin(camYaw);
+    // World-space vector derived from input vector [right, forward]
+    // yaw=0 => worldX=right, worldZ=-forward (W = -Z/up on screen)
+    let worldX: number = rightInput * cosYaw - forwardInput * sinYaw;
+    let worldZ: number = -rightInput * sinYaw - forwardInput * cosYaw;
+    
+    // Coordinate system: W key = -Z forward movement
 
     // Normalize diagonal movement
     const len = Math.hypot(worldX, worldZ);
@@ -133,18 +133,14 @@ export class ClientPrediction {
       timestamp: command.timestamp
     };
     
-    // Apply movement relative to published camera basis (from player.tsx),
-    // falling back to world axes if not present
+    // Apply movement using consistent coordinate system
     const speed = 5.5;
     const rightInput = Math.abs(command.right) > 0.01 ? command.right : 0;
     const forwardInput = Math.abs(command.forward) > 0.01 ? command.forward : 0;
-    const win: any = (typeof window !== 'undefined') ? (window as any) : {};
     
-    let worldX, worldZ;
-    
-    // Use the pre-calculated world vectors from command
-    worldX = Math.abs(command.right) > 0.01 ? command.right : 0;
-    worldZ = Math.abs(command.forward) > 0.01 ? command.forward : 0;
+    // Use the pre-calculated world vectors from command (camera-relative already transformed)
+    let worldX = Math.abs(command.right) > 0.01 ? command.right : 0;
+    let worldZ = Math.abs(command.forward) > 0.01 ? command.forward : 0;
     
     // removed per-frame logging to prevent jank
     // console.log(`[${win.gameCameraMode?.toUpperCase() || 'UNKNOWN'}] worldX=${worldX.toFixed(2)} worldZ=${worldZ.toFixed(2)} targetVz=${(worldZ * speed).toFixed(2)}`);
@@ -164,23 +160,45 @@ export class ClientPrediction {
     }
     const targetVx = worldX * speed;
     const targetVz = worldZ * speed;
-    const accel = 20;
     
-    playerBody.velocity.x += (targetVx - playerBody.velocity.x) * Math.min(1, accel * command.deltaTime);
-    playerBody.velocity.z += (targetVz - playerBody.velocity.z) * Math.min(1, accel * command.deltaTime);
+    const isGrounded = physics.isGrounded();
     
-    // Log actual velocity being applied
-    if (Math.abs(targetVx) > 0.1 || Math.abs(targetVz) > 0.1) {
-      console.log(`[VELOCITY] targetVx=${targetVx.toFixed(2)} targetVz=${targetVz.toFixed(2)} actualVx=${playerBody.velocity.x.toFixed(2)} actualVz=${playerBody.velocity.z.toFixed(2)}`);
+    // Gentle acceleration for smooth movement
+    const accel = 25; // High acceleration for responsiveness
+    const deltaTime = Math.min(command.deltaTime, 1/30); // Cap at 30 FPS to match server
+    const lerpFactor = Math.min(1, accel * deltaTime);
+    
+    // Apply velocity changes
+    playerBody.velocity.x += (targetVx - playerBody.velocity.x) * lerpFactor;
+    playerBody.velocity.z += (targetVz - playerBody.velocity.z) * lerpFactor;
+    
+    // Clean stop when no input
+    let stoppedX = false, stoppedZ = false;
+    if (Math.abs(targetVx) < 0.01 && Math.abs(playerBody.velocity.x) < 0.1) {
+      playerBody.velocity.x = 0;
+      stoppedX = true;
     }
+    if (Math.abs(targetVz) < 0.01 && Math.abs(playerBody.velocity.z) < 0.1) {
+      playerBody.velocity.z = 0;
+      stoppedZ = true;
+    }
+    
+    // Match server Y behavior to prevent desync
+    if (isGrounded) {
+      playerBody.position.y = 0.5; // Force Y to match server
+      playerBody.velocity.y = Math.max(0, playerBody.velocity.y); // Clamp Y velocity like server
+    }
+    const stoppedY = Math.abs(playerBody.velocity.y) < 0.01;
+    
+    // Diagnostic logging removed - no longer needed
     
     // Jump
     if (command.jump && physics.isGrounded()) {
       playerBody.velocity.y = 4.5;
     }
     
-    // Step physics
-    physics.step(command.deltaTime);
+    // Step physics with same capped deltaTime as acceleration
+    physics.step(deltaTime);
     
     // Store state after applying input
     currentState.position.x = playerBody.position.x;
