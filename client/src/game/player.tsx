@@ -104,7 +104,8 @@ export function PlayerMesh() {
 
     // Publish camera state for movement system
     (window as any).gameCameraMode = cameraMode;
-    (window as any).gameCameraYaw = yaw;
+    // Use smoothed yaw in first-person to match actual camera look direction
+    (window as any).gameCameraYaw = cameraMode === 'first' ? (smoothYawRef.current || yaw) : yaw;
     
     // RESTORE THIRD-PERSON WORKING VECTORS
     (window as any).gameForwardVec = { x: 0, z: -1 }; // Back to working third-person
@@ -160,11 +161,16 @@ export function PlayerMesh() {
 
     if (hasInput) {
       const camYaw = (window as any).gameCameraYaw || 0;
+      const camMode: 'first' | 'third' = (window as any).gameCameraMode === 'first' ? 'first' : 'third';
       const cosYaw = Math.cos(camYaw);
       const sinYaw = Math.sin(camYaw);
-      // Match prediction mapping: W => -Z when yaw=0
-      const worldX = rIn * cosYaw - fIn * sinYaw;
-      const worldZ = -rIn * sinYaw - fIn * cosYaw;
+      // Match prediction mapping for each camera mode
+      const worldX = camMode === 'first'
+        ? (rIn * cosYaw + fIn * sinYaw)
+        : (rIn * cosYaw - fIn * sinYaw);
+      const worldZ = camMode === 'first'
+        ? (fIn * cosYaw - rIn * sinYaw)
+        : (-rIn * sinYaw - fIn * cosYaw);
 
       let desiredYaw = Math.atan2(worldX, worldZ);
 
