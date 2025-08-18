@@ -166,7 +166,7 @@ export function PlayerMesh() {
       const worldX = rIn * cosYaw - fIn * sinYaw;
       const worldZ = -rIn * sinYaw - fIn * cosYaw;
 
-      let desiredYaw = Math.atan2(worldX, worldZ) + Math.PI;
+      let desiredYaw = Math.atan2(worldX, worldZ);
 
       // Smooth rotation (shortest angular path)
       const delta = Math.atan2(Math.sin(desiredYaw - avatarRotation), Math.cos(desiredYaw - avatarRotation));
