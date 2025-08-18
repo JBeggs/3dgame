@@ -102,10 +102,12 @@ export function PlayerMesh() {
     
     // no console spam
 
-    // Publish camera state for movement system
+    // Publish camera and facing state for movement system
     (window as any).gameCameraMode = cameraMode;
-    // Use smoothed yaw in first-person to match actual camera look direction
+    // Use smoothed yaw in first-person to match actual camera look direction for rendering
     (window as any).gameCameraYaw = cameraMode === 'first' ? (smoothYawRef.current || yaw) : yaw;
+    // Publish avatar facing yaw so first-person movement can follow body orientation
+    (window as any).gameFacingYaw = avatarRotation;
     
     // RESTORE THIRD-PERSON WORKING VECTORS
     (window as any).gameForwardVec = { x: 0, z: -1 }; // Back to working third-person
@@ -159,25 +161,31 @@ export function PlayerMesh() {
     const fIn = input.state.forward;
     const hasInput = Math.abs(rIn) > 0.01 || Math.abs(fIn) > 0.01;
 
-    if (hasInput) {
-      const camYaw = (window as any).gameCameraYaw || 0;
-      const camMode: 'first' | 'third' = (window as any).gameCameraMode === 'first' ? 'first' : 'third';
-      const cosYaw = Math.cos(camYaw);
-      const sinYaw = Math.sin(camYaw);
-      // Match prediction mapping for each camera mode
-      const worldX = camMode === 'first'
-        ? (rIn * cosYaw + fIn * sinYaw)
-        : (rIn * cosYaw - fIn * sinYaw);
-      const worldZ = camMode === 'first'
-        ? (fIn * cosYaw - rIn * sinYaw)
-        : (-rIn * sinYaw - fIn * cosYaw);
+    const camYaw = (window as any).gameCameraYaw || 0;
+    const camMode: 'first' | 'third' = (window as any).gameCameraMode === 'first' ? 'first' : 'third';
 
-      let desiredYaw = Math.atan2(worldX, worldZ);
+    if (camMode === 'first') {
+      // First-person steering: use left/right to gently turn body, no sudden spins
+      const turnRate = 2.0; // rad/s max
+      // Invert lateral so pressing left (A/left stick) turns left intuitively
+      const steerInput = -rIn; // [-1,1]
+      const deltaYaw = Math.max(-turnRate * dt, Math.min(turnRate * dt, steerInput * turnRate * dt));
+      const newYaw = avatarRotation + deltaYaw;
+      setAvatarRotation(newYaw);
+      (window as any).lastInputHeadingYaw = newYaw;
+    } else if (hasInput) {
+      // Third-person: face movement direction but clamp turn rate to avoid drastic spins
+      const c = Math.cos(camYaw);
+      const s = Math.sin(camYaw);
+      const worldX = rIn * c - fIn * s;
+      const worldZ = -rIn * s - fIn * c;
+      const desiredYaw = Math.atan2(worldX, worldZ);
 
-      // Smooth rotation (shortest angular path)
+      // Smooth rotation with max angular velocity
       const delta = Math.atan2(Math.sin(desiredYaw - avatarRotation), Math.cos(desiredYaw - avatarRotation));
-      const smoothingRate = 10;
-      const smoothedYaw = avatarRotation + delta * Math.min(1, smoothingRate * dt);
+      const maxTurnRate = 2.0; // rad/s
+      const step = Math.max(-maxTurnRate * dt, Math.min(maxTurnRate * dt, delta));
+      const smoothedYaw = avatarRotation + step;
       setAvatarRotation(smoothedYaw);
       (window as any).lastInputHeadingYaw = smoothedYaw;
     } else if ((window as any).lastInputHeadingYaw !== undefined) {

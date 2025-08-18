@@ -49,14 +49,22 @@ export class ClientPrediction {
     const cosYaw = Math.cos(camYaw);
     const sinYaw = Math.sin(camYaw);
     const camMode: 'first' | 'third' = (typeof window !== 'undefined' && (window as any).gameCameraMode === 'first') ? 'first' : 'third';
+    const facingYaw: number = (typeof window !== 'undefined' && (window as any).gameFacingYaw != null)
+      ? (window as any).gameFacingYaw
+      : camYaw;
     // World-space vector derived from input vector [right, forward]
     // First-person: W -> +Z when yaw=0 (classic forward)
     // Third-person: W -> -Z when yaw=0 (screen up), per request "down must be down"
     let worldX: number;
     let worldZ: number;
     if (camMode === 'first') {
-      worldX = rightInput * cosYaw + forwardInput * sinYaw;
-      worldZ = forwardInput * cosYaw - rightInput * sinYaw;
+      // In first-person, move relative to body facing yaw (no need to spin camera)
+      // Invert lateral input so left goes left, right goes right
+      const c = Math.cos(facingYaw);
+      const s = Math.sin(facingYaw);
+      const lateral = -rightInput;
+      worldX = lateral * c + forwardInput * s;
+      worldZ = forwardInput * c - lateral * s;
     } else {
       worldX = rightInput * cosYaw - forwardInput * sinYaw;
       worldZ = -rightInput * sinYaw - forwardInput * cosYaw;
