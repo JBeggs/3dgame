@@ -3,7 +3,7 @@ import { WebSocketServer } from 'ws';
 const PORT = process.env.PORT || 8080;
 const wss = new WebSocketServer({ port: PORT });
 
-console.log(`[ws] listening on :${PORT}`);
+// quiet listen log
 
 const clients = new Map(); // id -> { ws, x,y,z, room, name, joinTime }
 const rooms = new Map(); // room -> { name, playerCount, created, maxPlayers, createdBy }
@@ -224,7 +224,7 @@ wss.on('connection', (ws) => {
         
         // Validate sequence number (prevent replay attacks)
         if (input.sequenceNumber <= c.lastInputSequence) {
-          console.log(`[prediction] Player ${id} sent old sequence ${input.sequenceNumber} (last: ${c.lastInputSequence})`);
+          // quiet old sequence log
           return;
         }
         
@@ -337,7 +337,7 @@ wss.on('connection', (ws) => {
         const projectile = projectiles.get(msg.id);
         if (projectile && projectile.playerId === id) {
           projectiles.delete(msg.id);
-          console.log(`[projectile] Player ${id} destroyed projectile ${msg.id}`);
+          // quiet projectile destroy log
           
           // Broadcast destruction to all players in the same room
           broadcastToRoom(c.room, { 
@@ -391,7 +391,7 @@ wss.on('connection', (ws) => {
 
         sendPlayersFor(id);
         sendTo(id, { t: 'joinSuccess', room: newRoom });
-        console.log(`[room] Player ${id} (${c.name}) moved from ${oldRoom} to ${newRoom}`);
+        // quiet room move log
       }
     } else if (msg.t === 'setName') {
       const c = clients.get(id);
@@ -442,7 +442,7 @@ wss.on('connection', (ws) => {
       
       sendPlayersFor(id);
       sendTo(id, { t: 'createSuccess', roomId, roomName });
-      console.log(`[room] Player ${id} (${c.name}) created room "${roomName}" (${roomId})`);
+      // quiet room create log
     }
   });
 
@@ -465,7 +465,7 @@ wss.on('connection', (ws) => {
         }
         // Delete the room
         rooms.delete(roomId);
-        console.log(`[room] Deleted room "${room.name}" (${roomId}) - creator left`);
+        // quiet room delete log
       }
       
       // Clean up player's projectiles
@@ -481,7 +481,7 @@ wss.on('connection', (ws) => {
       updateRoomCount(c.room);
       broadcastToRoom(c.room, { t: 'playerLeft', playerId: id, playerName: c.name });
       broadcastRoomList();
-      console.log(`[disconnect] Player ${id} (${c.name}) left ${c.room}`);
+      // quiet disconnect log
     }
     clients.delete(id);
   });
@@ -524,7 +524,7 @@ setInterval(() => {
         const damage = proj.damage;
         target.health = Math.max(0, target.health - damage);
         
-        console.log(`[combat] Projectile ${projId} hit player ${target.ws.id} for ${damage} damage (health: ${target.health}/${target.maxHealth})`);
+        // quiet combat hit log
         
         // Notify the hit player about damage
         sendTo(target.ws.id, { 

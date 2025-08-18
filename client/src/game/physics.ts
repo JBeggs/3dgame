@@ -5,6 +5,8 @@ export type PhysicsAPI = {
   playerBody: CANNON.Body;
   step: (dt: number) => void;
   addStaticBox: (x: number, y: number, z: number, sx: number, sy: number, sz: number) => CANNON.Body;
+  addStaticBoxRotated: (x: number, y: number, z: number, sx: number, sy: number, sz: number, rotY: number) => CANNON.Body;
+  clearStaticBodies: () => void;
   removeBody: (body: CANNON.Body) => void;
   isGrounded: () => boolean;
   correctPosition: (x: number, y: number, z: number) => void;
@@ -62,12 +64,29 @@ export function getPhysics(): PhysicsAPI {
     }
   }
 
+  const staticBodies: CANNON.Body[] = [];
   function addStaticBox(x: number, y: number, z: number, sx: number, sy: number, sz: number) {
     const body = new CANNON.Body({ mass: 0 });
     body.addShape(new CANNON.Box(new CANNON.Vec3(sx / 2, sy / 2, sz / 2)));
     body.position.set(x, y, z);
     world.addBody(body);
+    staticBodies.push(body);
     return body;
+  }
+  function addStaticBoxRotated(x: number, y: number, z: number, sx: number, sy: number, sz: number, rotY: number) {
+    const body = new CANNON.Body({ mass: 0 });
+    body.addShape(new CANNON.Box(new CANNON.Vec3(sx / 2, sy / 2, sz / 2)));
+    body.position.set(x, y, z);
+    body.quaternion.setFromEuler(0, rotY, 0);
+    world.addBody(body);
+    staticBodies.push(body);
+    return body;
+  }
+  function clearStaticBodies() {
+    for (const b of staticBodies) {
+      try { world.removeBody(b); } catch {}
+    }
+    staticBodies.length = 0;
   }
   function removeBody(body: CANNON.Body) {
     try { world.removeBody(body); } catch {}
@@ -88,25 +107,20 @@ export function getPhysics(): PhysicsAPI {
   
   // Server position correction method
   function correctPosition(x: number, y: number, z: number) {
-    console.log(`🔧 Correcting position: ${playerBody.position.x.toFixed(1)}, ${playerBody.position.y.toFixed(1)}, ${playerBody.position.z.toFixed(1)} -> ${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`);
-    
     // Apply server-authoritative position
     playerBody.position.set(x, y, z);
     
     // Reset velocity to prevent jarring movement
     playerBody.velocity.set(0, 0, 0);
     playerBody.angularVelocity.set(0, 0, 0);
-    
-    console.log('✅ Position corrected by server authority');
   }
 
-  singleton = { world, playerBody, step, addStaticBox, removeBody, isGrounded, correctPosition };
+  singleton = { world, playerBody, step, addStaticBox, addStaticBoxRotated, clearStaticBodies, removeBody, isGrounded, correctPosition };
   
   // Listen for server position corrections (only set up once)
   if (typeof window !== 'undefined') {
     window.addEventListener('serverPositionCorrection', (event: any) => {
-      const { x, y, z, reason } = event.detail;
-      console.log(`🚨 Server position correction: ${reason}`);
+      const { x, y, z } = event.detail;
       correctPosition(x, y, z);
     });
   }

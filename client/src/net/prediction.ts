@@ -58,16 +58,16 @@ export class ClientPrediction {
     let worldX: number;
     let worldZ: number;
     if (camMode === 'first') {
-      // In first-person, move relative to body facing yaw (no need to spin camera)
-      // Invert lateral input so left goes left, right goes right
+      // First-person: turn with left/right, move only along facing (no strafe)
       const c = Math.cos(facingYaw);
       const s = Math.sin(facingYaw);
-      const lateral = -rightInput;
-      worldX = lateral * c + forwardInput * s;
-      worldZ = forwardInput * c - lateral * s;
+      const forward = forwardInput; // W forward, S backward
+      worldX = forward * s;
+      worldZ = forward * c;
     } else {
-      worldX = rightInput * cosYaw - forwardInput * sinYaw;
-      worldZ = -rightInput * sinYaw - forwardInput * cosYaw;
+      // Third-person: invert mapping (opposite of current)
+      worldX = -(rightInput * cosYaw - forwardInput * sinYaw);
+      worldZ = -(-rightInput * sinYaw - forwardInput * cosYaw);
     }
     
 
@@ -98,8 +98,17 @@ export class ClientPrediction {
     const timeSinceLastInput = this.inputHistory.length > 0 ? 
       now - this.inputHistory[this.inputHistory.length - 1].timestamp : 1000;
     
-    // DEBUG: Log prediction decisions
-    // quiet
+    // DEBUG: Lobby movement diagnostics (coarse)
+    if ((window as any).gameCameraMode === 'third') {
+      const diagEvery = 8;
+      if ((this.currentSequence % diagEvery) === 0) {
+        // Minimal numeric diagnostics to avoid spam
+        // forward/back sign, and vector mag
+        const mag = Math.hypot(worldX, worldZ).toFixed(2);
+        // eslint-disable-next-line no-console
+        console.log(`[lobby-move] fp=${(window as any).gameCameraMode==='first'} wx=${worldX.toFixed(2)} wz=${worldZ.toFixed(2)} | mag=${mag}`);
+      }
+    }
     
     if (hasInput || timeSinceLastInput > 100) { // Send at least every 100ms
       // Store input in history

@@ -45,7 +45,6 @@ function Scene() {
       {/* Other players with enhanced nameplates */}
       {(() => {
         const otherPlayers = Array.from(net.players.values()).filter(p => p.id !== net.selfId);
-        
         return otherPlayers;
       })().map((p) => {
         const prev = net.playersPrev.get(p.id) || p;
@@ -81,6 +80,11 @@ function Scene() {
           Math.pow(ix - playerPos.x, 2) + 
           Math.pow(iz - playerPos.z, 2)
         );
+
+        // Guard against rendering a ghost copy of ourselves if the server snapshot
+        // briefly includes our own player or IDs are not yet established.
+        if (p.id === net.selfId) return null;
+        if (distance < 0.8) return null;
         
         // rotation is now interpolated above
         
@@ -138,7 +142,7 @@ export function GameCanvas({ showConfigPanels = false }: { showConfigPanels?: bo
           {/* Disable complex interactables for lobby testing */}
           {/* <Interactables /> */}
         </Suspense>
-        <OrbitControls makeDefault enableDamping enablePan={false} enableZoom={false} />
+        {/* Remove OrbitControls; handled in PlayerMesh for consistent mobile gestures */}
         <StatsGl />
       </Canvas>
       {/* Simplified UI for lobby testing */}

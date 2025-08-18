@@ -39,6 +39,12 @@ export function PlayerMesh() {
   const smoothYawRef = useRef(0); // use ref to avoid per-frame state re-render
   const smoothCameraYRef = useRef(0); // Smooth Y position for camera to prevent jump jitter
   const lookActiveRef = useRef(false);
+  // Third-person camera controls
+  const thirdOrbitYawRef = useRef(0);
+  const thirdDistanceRef = useRef(22);
+  const isOrbitingRef = useRef(false);
+  const pinchStateRef = useRef<{ active: boolean; d0: number } | null>(null);
+  const lastTouchRef = useRef<{ x: number; y: number } | null>(null);
   // Model forward offset (0 = face exactly the input heading)
   const AVATAR_FORWARD_OFFSET = 0;
 
@@ -84,6 +90,84 @@ export function PlayerMesh() {
       window.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mouseup', onMouseUp);
       window.removeEventListener('mousemove', onMouseMove);
+    };
+  }, [cameraMode]);
+
+  // Third-person camera input: orbit and zoom (wheel + pinch)
+  useEffect(() => {
+    function onWheel(e: WheelEvent) {
+      if (cameraMode !== 'third') return;
+      const delta = Math.sign(e.deltaY) * 0.6;
+      thirdDistanceRef.current = Math.max(6, Math.min(40, thirdDistanceRef.current + delta));
+    }
+    function onMouseDown(e: MouseEvent) {
+      if (cameraMode !== 'third') return;
+      if (e.button === 0 || e.button === 2) {
+        isOrbitingRef.current = true;
+      }
+    }
+    function onMouseUp(e: MouseEvent) {
+      if (e.button === 0 || e.button === 2) {
+        isOrbitingRef.current = false;
+      }
+    }
+    function onMouseMove(e: MouseEvent) {
+      if (cameraMode !== 'third') return;
+      if (isOrbitingRef.current) {
+        thirdOrbitYawRef.current += e.movementX * 0.003;
+      }
+    }
+    function touchDistance(t0: Touch, t1: Touch) {
+      const dx = t0.clientX - t1.clientX;
+      const dy = t0.clientY - t1.clientY;
+      return Math.hypot(dx, dy);
+    }
+    function onTouchStart(e: TouchEvent) {
+      if (cameraMode !== 'third') return;
+      if (e.touches.length === 2) {
+        pinchStateRef.current = { active: true, d0: touchDistance(e.touches[0], e.touches[1]) };
+        lastTouchRef.current = null;
+      } else if (e.touches.length === 1) {
+        lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+    }
+    function onTouchMove(e: TouchEvent) {
+      if (cameraMode !== 'third') return;
+      const s = pinchStateRef.current;
+      if (s && s.active && e.touches.length === 2) {
+        const d = touchDistance(e.touches[0], e.touches[1]);
+        const scale = s.d0 > 0 ? d / s.d0 : 1;
+        const target = thirdDistanceRef.current / Math.max(0.7, Math.min(1.3, scale));
+        thirdDistanceRef.current = Math.max(6, Math.min(40, target));
+        s.d0 = d;
+      } else if (!s && e.touches.length === 1 && lastTouchRef.current) {
+        const tx = e.touches[0].clientX;
+        const ty = e.touches[0].clientY;
+        const dx = tx - lastTouchRef.current.x;
+        // Horizontal drag to orbit yaw; ignore vertical for now
+        thirdOrbitYawRef.current += dx * 0.003;
+        lastTouchRef.current = { x: tx, y: ty };
+      }
+    }
+    function onTouchEnd(e: TouchEvent) {
+      if (e.touches.length < 2) pinchStateRef.current = null;
+      if (e.touches.length === 0) lastTouchRef.current = null;
+    }
+    window.addEventListener('wheel', onWheel, { passive: true } as any);
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('touchstart', onTouchStart, { passive: true } as any);
+    window.addEventListener('touchmove', onTouchMove, { passive: true } as any);
+    window.addEventListener('touchend', onTouchEnd, { passive: true } as any);
+    return () => {
+      window.removeEventListener('wheel', onWheel as any);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('touchstart', onTouchStart as any);
+      window.removeEventListener('touchmove', onTouchMove as any);
+      window.removeEventListener('touchend', onTouchEnd as any);
     };
   }, [cameraMode]);
 
@@ -177,8 +261,9 @@ export function PlayerMesh() {
       // Third-person: face movement direction but clamp turn rate to avoid drastic spins
       const c = Math.cos(camYaw);
       const s = Math.sin(camYaw);
-      const worldX = rIn * c - fIn * s;
-      const worldZ = -rIn * s - fIn * c;
+      // Invert mapping to match updated third-person movement
+      const worldX = -(rIn * c - fIn * s);
+      const worldZ = -(-rIn * s - fIn * c);
       const desiredYaw = Math.atan2(worldX, worldZ);
 
       // Smooth rotation with max angular velocity
@@ -240,10 +325,15 @@ export function PlayerMesh() {
       const look = head.clone().add(dir.multiplyScalar(10));
       camera.lookAt(look);
     } else {
-      // simple chase cam with reduced interpolation
-      const camOffset = new THREE.Vector3(4, 3, 6);
-      const targetPos = new THREE.Vector3(p.x, p.y, p.z).add(camOffset);
-      camera.position.lerp(targetPos, 0.2); // Faster interpolation to reduce lag
+      // Third-person orbit camera with zoomable distance
+      const dist = thirdDistanceRef.current;
+      const elev = Math.max(0.4, Math.min(0.9, 0.6)); // slightly higher
+      const yaw = thirdOrbitYawRef.current;
+      const offsetX = Math.sin(yaw) * dist;
+      const offsetZ = Math.cos(yaw) * dist;
+      const offsetY = dist * 0.4 + 2.0 * elev;
+      const targetPos = new THREE.Vector3(p.x - offsetX, p.y + offsetY, p.z - offsetZ);
+      camera.position.lerp(targetPos, 0.2);
       camera.lookAt(p.x, p.y + 0.5, p.z);
     }
   });
