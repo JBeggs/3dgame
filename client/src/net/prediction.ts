@@ -41,11 +41,20 @@ export class ClientPrediction {
     const rightInput = Math.abs(input.state.right) > 0.01 ? input.state.right : 0;
     const forwardInput = Math.abs(input.state.forward) > 0.01 ? input.state.forward : 0;
     const win: any = (typeof window !== 'undefined') ? (window as any) : {};
-    
-    // BOTH MODES: Same simple movement that was working
-    let worldX = rightInput;
-    let worldZ = forwardInput;
-    
+
+    // SEPARATE MOVEMENT LOGIC PER VIEW (preserve separation, unify behavior)
+    let worldX: number;
+    let worldZ: number;
+    if (win.gameCameraMode === 'first') {
+      // First-person: world-relative; fix left/right inversion and keep W forward
+      worldX = -rightInput;
+      worldZ = -forwardInput;
+    } else {
+      // Third-person: world-relative; W forward, L/R normal (fix inversion)
+      worldX = rightInput;
+      worldZ = forwardInput;
+    }
+
     // Normalize diagonal movement
     const len = Math.hypot(worldX, worldZ);
     if (len > 1) {
@@ -137,7 +146,8 @@ export class ClientPrediction {
     worldX = Math.abs(command.right) > 0.01 ? command.right : 0;
     worldZ = Math.abs(command.forward) > 0.01 ? command.forward : 0;
     
-    console.log(`[${win.gameCameraMode?.toUpperCase() || 'UNKNOWN'}] worldX=${worldX.toFixed(2)} worldZ=${worldZ.toFixed(2)} targetVz=${(worldZ * speed).toFixed(2)}`);
+    // removed per-frame logging to prevent jank
+    // console.log(`[${win.gameCameraMode?.toUpperCase() || 'UNKNOWN'}] worldX=${worldX.toFixed(2)} worldZ=${worldZ.toFixed(2)} targetVz=${(worldZ * speed).toFixed(2)}`);
     
     // Normalize diagonal movement to prevent faster diagonal speed
     const len = Math.hypot(worldX, worldZ);

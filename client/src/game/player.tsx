@@ -36,7 +36,7 @@ export function PlayerMesh() {
   const [cameraMode, setCameraMode] = useState<'third' | 'first'>('third');
   const [yaw, setYaw] = useState(0);
   const [pitch, setPitch] = useState(0);
-  const [smoothYaw, setSmoothYaw] = useState(0);
+  const smoothYawRef = useRef(0); // use ref to avoid per-frame state re-render
   const lookActiveRef = useRef(false);
   // Model forward offset (0 = face exactly the input heading)
   const AVATAR_FORWARD_OFFSET = 0;
@@ -177,7 +177,18 @@ export function PlayerMesh() {
         }
       } else {
         // THIRD-PERSON: Fix avatar facing - flip forward to face correct direction
-        targetYaw = Math.atan2(rIn, -fIn);
+        const inputMagnitude = Math.hypot(rIn, fIn);
+        let desiredYaw = (window as any).lastInputHeadingYaw ?? avatarRotation;
+        if (inputMagnitude > 0.2) {
+          desiredYaw = Math.atan2(rIn, -fIn);
+        }
+        // Smooth rotation to reduce jumpiness (shortest angular path, frame-rate independent)
+        const delta = Math.atan2(Math.sin(desiredYaw - avatarRotation), Math.cos(desiredYaw - avatarRotation));
+        const smoothingRate = 10; // higher = faster response
+        const smoothedYaw = avatarRotation + delta * Math.min(1, smoothingRate * dt);
+        setAvatarRotation(smoothedYaw);
+        (window as any).lastInputHeadingYaw = smoothedYaw;
+        return; // prevent the generic set below from double-setting
       }
       
       setAvatarRotation(targetYaw);
@@ -220,19 +231,17 @@ export function PlayerMesh() {
       const head = new THREE.Vector3(p.x, p.y + 1.5, p.z);
       camera.position.lerp(head, 0.25);
       
-      // First-person camera - smoothly face movement direction for mobile
+      // First-person camera - smoothly face movement direction for mobile (no per-frame state set)
       const currentHasInput = Math.abs(input.state.right) > 0.01 || Math.abs(input.state.forward) > 0.01;
-      const targetYaw = currentHasInput ? avatarRotation : smoothYaw; // Stay facing last direction
+      const targetYaw = currentHasInput ? avatarRotation : smoothYawRef.current;
       
-      // Smooth camera rotation
-      let deltaYaw = targetYaw - smoothYaw;
-      // Handle angle wrapping (shortest path)
+      // Smooth camera rotation (shortest path)
+      let deltaYaw = targetYaw - smoothYawRef.current;
       if (deltaYaw > Math.PI) deltaYaw -= 2 * Math.PI;
       if (deltaYaw < -Math.PI) deltaYaw += 2 * Math.PI;
-      const newSmoothYaw = smoothYaw + deltaYaw * 0.1; // Smooth factor
-      setSmoothYaw(newSmoothYaw);
+      smoothYawRef.current = smoothYawRef.current + deltaYaw * 0.1;
       
-      const dir = new THREE.Vector3(Math.sin(newSmoothYaw), 0, Math.cos(newSmoothYaw));
+      const dir = new THREE.Vector3(Math.sin(smoothYawRef.current), 0, Math.cos(smoothYawRef.current));
       const look = head.clone().add(dir.multiplyScalar(10));
       camera.lookAt(look);
     } else {

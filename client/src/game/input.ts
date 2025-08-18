@@ -87,10 +87,10 @@ export function getInput(): InputAPI {
       keys.has('KeyD') || keys.has('ArrowRight');
     if (keyboardActive) return;
 
-    // Clamp tiny values to prevent floating point drift
-    const threshold = 1e-10;
-    state.right = Math.abs(right) < threshold ? 0 : clamp(right);
-    state.forward = Math.abs(forward) < threshold ? 0 : clamp(forward);
+    // Apply a sensible deadzone to prevent tiny drift from moving the character
+    const deadzone = 0.1; // previously ~0; raise to stop jitter when centered
+    state.right = Math.abs(right) < deadzone ? 0 : clamp(right);
+    state.forward = Math.abs(forward) < deadzone ? 0 : clamp(forward);
   }
   function setJump(v: boolean) {
     state.jump = v;
