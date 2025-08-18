@@ -100,12 +100,10 @@ export function MapScene() {
       const px = (bestX + 0.5) * cellSize;
       const pz = (bestY + 0.5) * cellSize;
       const body = phys.playerBody;
-      // Adjust spawn height for sphere body (ground + radius + clearance)
-      const spawnY = 0.5 + 0.4 + 0.1; // ground + radius + clearance
-      console.log('Spawning player at:', { x: px, y: spawnY, z: pz, bestScore });
+      console.log('Spawning player at:', { x: px, y: 0.6, z: pz, bestScore });
       
       // Force position update multiple times to ensure it takes
-      body.position.set(px, spawnY, pz);
+      body.position.set(px, 0.6, pz);
       body.velocity.set(0, 0, 0);
       body.angularVelocity.set(0, 0, 0);
       
