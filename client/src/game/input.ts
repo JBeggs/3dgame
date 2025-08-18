@@ -36,7 +36,7 @@ export function getInput(): InputAPI {
   }
 
   function onKeyDown(e: KeyboardEvent) {
-    console.log('⌨️ Key:', e.code); // Simpler debug logging
+    // Keyboard input logging removed for clarity
     // ensure canvas has focus even if UI clicked
     if (document.activeElement && (document.activeElement as HTMLElement).blur) {
       try { (document.activeElement as HTMLElement).blur(); } catch {}
@@ -79,6 +79,14 @@ export function getInput(): InputAPI {
   }
 
   function setVector(right: number, forward: number) {
+    // If any movement key is currently held, don't override with touch/gamepad
+    const keyboardActive =
+      keys.has('KeyW') || keys.has('ArrowUp') ||
+      keys.has('KeyS') || keys.has('ArrowDown') ||
+      keys.has('KeyA') || keys.has('ArrowLeft') ||
+      keys.has('KeyD') || keys.has('ArrowRight');
+    if (keyboardActive) return;
+
     // Clamp tiny values to prevent floating point drift
     const threshold = 1e-10;
     state.right = Math.abs(right) < threshold ? 0 : clamp(right);

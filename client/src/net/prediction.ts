@@ -37,12 +37,28 @@ export class ClientPrediction {
     const deltaTime = this.lastInputTime > 0 ? (now - this.lastInputTime) / 1000 : 1/60;
     this.lastInputTime = now;
     
-    // Create input command
+    // Calculate movement vectors first
+    const rightInput = Math.abs(input.state.right) > 0.01 ? input.state.right : 0;
+    const forwardInput = Math.abs(input.state.forward) > 0.01 ? input.state.forward : 0;
+    const win: any = (typeof window !== 'undefined') ? (window as any) : {};
+    
+    // BOTH MODES: Same simple movement that was working
+    let worldX = rightInput;
+    let worldZ = forwardInput;
+    
+    // Normalize diagonal movement
+    const len = Math.hypot(worldX, worldZ);
+    if (len > 1) {
+      worldX /= len;
+      worldZ /= len;
+    }
+
+    // Create input command with calculated world vectors
     const command: InputCommand = {
       sequenceNumber: this.currentSequence++,
       timestamp: now,
-      right: input.state.right,
-      forward: input.state.forward,
+      right: worldX,  // Send world X
+      forward: worldZ, // Send world Z
       jump: input.state.jump,
       action: input.state.action,
       deltaTime
@@ -108,23 +124,45 @@ export class ClientPrediction {
       timestamp: command.timestamp
     };
     
-    // Apply movement (similar to player.tsx logic)
-    const move = new THREE.Vector3(command.right, 0, -command.forward);
+    // Apply movement relative to published camera basis (from player.tsx),
+    // falling back to world axes if not present
     const speed = 5.5;
-    if (move.lengthSq() > 1) move.normalize();
-    
-    // Apply threshold to prevent tiny drift
     const rightInput = Math.abs(command.right) > 0.01 ? command.right : 0;
     const forwardInput = Math.abs(command.forward) > 0.01 ? command.forward : 0;
-    const adjustedMove = new THREE.Vector3(rightInput, 0, -forwardInput);
+    const win: any = (typeof window !== 'undefined') ? (window as any) : {};
     
-    // Accelerate toward desired velocity
-    const targetVx = adjustedMove.x * speed;
-    const targetVz = adjustedMove.z * speed;
+    let worldX, worldZ;
+    
+    // Use the pre-calculated world vectors from command
+    worldX = Math.abs(command.right) > 0.01 ? command.right : 0;
+    worldZ = Math.abs(command.forward) > 0.01 ? command.forward : 0;
+    
+    console.log(`[${win.gameCameraMode?.toUpperCase() || 'UNKNOWN'}] worldX=${worldX.toFixed(2)} worldZ=${worldZ.toFixed(2)} targetVz=${(worldZ * speed).toFixed(2)}`);
+    
+    // Normalize diagonal movement to prevent faster diagonal speed
+    const len = Math.hypot(worldX, worldZ);
+    if (len > 1) {
+      worldX /= len;
+      worldZ /= len;
+    }
+    
+    if ((rightInput || forwardInput) && (typeof window !== 'undefined')) {
+      try {
+        const yaw = Math.atan2(worldX, worldZ);
+        // Movement logging removed for clarity
+      } catch {}
+    }
+    const targetVx = worldX * speed;
+    const targetVz = worldZ * speed;
     const accel = 20;
     
     playerBody.velocity.x += (targetVx - playerBody.velocity.x) * Math.min(1, accel * command.deltaTime);
     playerBody.velocity.z += (targetVz - playerBody.velocity.z) * Math.min(1, accel * command.deltaTime);
+    
+    // Log actual velocity being applied
+    if (Math.abs(targetVx) > 0.1 || Math.abs(targetVz) > 0.1) {
+      console.log(`[VELOCITY] targetVx=${targetVx.toFixed(2)} targetVz=${targetVz.toFixed(2)} actualVx=${playerBody.velocity.x.toFixed(2)} actualVz=${playerBody.velocity.z.toFixed(2)}`);
+    }
     
     // Jump
     if (command.jump && physics.isGrounded()) {
