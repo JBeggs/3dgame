@@ -98,17 +98,7 @@ export class ClientPrediction {
     const timeSinceLastInput = this.inputHistory.length > 0 ? 
       now - this.inputHistory[this.inputHistory.length - 1].timestamp : 1000;
     
-    // DEBUG: Lobby movement diagnostics (coarse)
-    if ((window as any).gameCameraMode === 'third') {
-      const diagEvery = 8;
-      if ((this.currentSequence % diagEvery) === 0) {
-        // Minimal numeric diagnostics to avoid spam
-        // forward/back sign, and vector mag
-        const mag = Math.hypot(worldX, worldZ).toFixed(2);
-        // eslint-disable-next-line no-console
-        console.log(`[lobby-move] fp=${(window as any).gameCameraMode==='first'} wx=${worldX.toFixed(2)} wz=${worldZ.toFixed(2)} | mag=${mag}`);
-      }
-    }
+    // diagnostics disabled
     
     if (hasInput || timeSinceLastInput > 100) { // Send at least every 100ms
       // Store input in history

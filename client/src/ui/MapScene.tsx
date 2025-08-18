@@ -406,6 +406,8 @@ function CircularLobby({ twistDeg = 25 }: { twistDeg?: number }) {
   const { gl: renderer } = useThree();
   const [shopModels, setShopModels] = useState<Record<string, THREE.Object3D | null>>({});
   const [autoModelScales, setAutoModelScales] = useState<Record<string, [number, number, number]>>({});
+  const [tableModel, setTableModel] = useState<THREE.Object3D | null>(null);
+  const [tableYOffset, setTableYOffset] = useState<number>(0);
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -459,6 +461,30 @@ function CircularLobby({ twistDeg = 25 }: { twistDeg?: number }) {
           // Fallback silently to box facade
         }
       }
+      // Load diner table model for coffee shop seating (optional)
+      try {
+        const tablePath = '/assets/models/coffee/diner_table.glb';
+        const gltf: any = await loader.loadModel(tablePath);
+        if (!mounted) return;
+        const root: any = (gltf.scene || gltf.scenes?.[0] || null);
+        if (root) {
+          root.traverse((obj: any) => {
+            if (obj.isMesh) {
+              obj.castShadow = true;
+              obj.receiveShadow = true;
+              const m = obj.material;
+              if (Array.isArray(m)) m.forEach((mm: any) => { if (mm) { mm.side = (window as any).THREE ? (window as any).THREE.DoubleSide : 2; mm.needsUpdate = true; }});
+              else if (m) { m.side = (window as any).THREE ? (window as any).THREE.DoubleSide : 2; m.needsUpdate = true; }
+            }
+          });
+          // Compute ground offset so model sits on floor
+          try {
+            const box = new THREE.Box3().setFromObject(root);
+            setTableYOffset(Math.max(0, -box.min.y));
+          } catch {}
+          setTableModel(root);
+        }
+      } catch {}
     })();
     return () => { mounted = false; };
   }, [renderer]);
@@ -552,25 +578,43 @@ function CircularLobby({ twistDeg = 25 }: { twistDeg?: number }) {
           <meshStandardMaterial color="#6b7280" />
         </mesh>
         <Text position={[0, 2.4, 0]} fontSize={0.5} color={'#f3f4f6'} anchorX="center">Coffee</Text>
-        {/* Seating ring */}
-        {new Array(16).fill(0).map((_, i) => {
-          const ang = (i / 16) * Math.PI * 2;
-          const r = 6.0;
-          const x = Math.cos(ang) * r;
-          const z = Math.sin(ang) * r;
-          return (
-            <group key={`seat-${i}`} position={[x, 0.5, z]} rotation={[0, ang + Math.PI, 0]}>
-              <mesh castShadow>
-                <cylinderGeometry args={[0.35, 0.35, 0.5, 14]} />
-                <meshStandardMaterial color="#9ca3af" />
-              </mesh>
-              <mesh position={[0, 0.32, -0.2]} castShadow>
-                <boxGeometry args={[0.5, 0.03, 0.3]} />
-                <meshStandardMaterial color="#d1d5db" />
-              </mesh>
-            </group>
-          );
-        })}
+        {/* Seating layout: 10 tables in two arcs (5 inner, 5 outer) */}
+        {(() => {
+          // Increase spacing: larger radii and staggered angles
+          const innerR = 6.5;
+          const outerR = 9.0;
+          const inner = Array.from({ length: 5 }, (_, i) => {
+            const ang = (i / 5) * Math.PI * 2 + Math.PI / 12; // slight offset
+            return { ang, r: innerR };
+          });
+          const outer = Array.from({ length: 5 }, (_, i) => {
+            const ang = (i / 5) * Math.PI * 2 + Math.PI / 6; // stagger relative to inner arc
+            return { ang, r: outerR };
+          });
+          const tables = [...inner, ...outer];
+          return tables.map(({ ang, r }, idx) => {
+            const x = Math.cos(ang) * r;
+            const z = Math.sin(ang) * r;
+            return (
+              <group key={`seat-${idx}`} position={[x, 0, z]} rotation={[0, ang + Math.PI, 0]}>
+                {tableModel ? (
+                  <primitive object={tableModel.clone()} position={[0, tableYOffset, 0]} scale={[0.5, 0.5, 0.5]} />
+                ) : (
+                  <>
+                    <mesh castShadow>
+                      <cylinderGeometry args={[0.32, 0.32, 0.5, 14]} />
+                      <meshStandardMaterial color="#9ca3af" />
+                    </mesh>
+                    <mesh position={[0, 0.32, -0.2]} castShadow>
+                      <boxGeometry args={[0.46, 0.03, 0.28]} />
+                      <meshStandardMaterial color="#d1d5db" />
+                    </mesh>
+                  </>
+                )}
+              </group>
+            );
+          });
+        })()}
       </group>
     </group>
   );

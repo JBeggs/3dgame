@@ -40,16 +40,17 @@ export class AssetLoader {
   }
 
   private async initializeLoaders(renderer: THREE.WebGLRenderer) {
-    console.log('🔧 Initializing asset loaders with compression support...');
+    const LOG = false;
+    LOG && console.log('🔧 Initializing asset loaders with compression support...');
     
     try {
       // Initialize KTX2 loader
       this.ktx2Loader.setTranscoderPath('/assets/libs/basis/');
       this.ktx2Loader.detectSupport(renderer);
       this.compressionSupport.ktx2 = true;
-      console.log('✅ KTX2 texture compression support enabled');
+      LOG && console.log('✅ KTX2 texture compression support enabled');
     } catch (error) {
-      console.warn('⚠️ KTX2 support not available, falling back to traditional textures');
+      // quiet
     }
 
     try {
@@ -58,21 +59,21 @@ export class AssetLoader {
       dracoLoader.setDecoderPath('/assets/libs/draco/');
       this.gltfLoader.setDRACOLoader(dracoLoader);
       this.compressionSupport.draco = true;
-      console.log('✅ Draco mesh compression support enabled');
+      LOG && console.log('✅ Draco mesh compression support enabled');
     } catch (error) {
-      console.warn('⚠️ Draco support not available');
+      // quiet
     }
 
     try {
       // Initialize Meshopt decoder
       this.gltfLoader.setMeshoptDecoder(MeshoptDecoder);
       this.compressionSupport.meshopt = true;
-      console.log('✅ Meshopt optimization support enabled');
+      LOG && console.log('✅ Meshopt optimization support enabled');
     } catch (error) {
-      console.warn('⚠️ Meshopt support not available');
+      // quiet
     }
 
-    console.log('🚀 Asset loader initialized with compression support:', this.compressionSupport);
+    LOG && console.log('🚀 Asset loader initialized with compression support:', this.compressionSupport);
   }
 
   /**
@@ -158,33 +159,38 @@ export class AssetLoader {
   }
 
   private async loadModelInternal(path: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      console.log(`🔄 Loading model: ${path}`);
-      
+    const LOG = false;
+    const attemptLoad = (p: string) => new Promise((resolve, reject) => {
+      LOG && console.log(`🔄 Loading model: ${p}`);
       this.gltfLoader.load(
-        path,
+        p,
         (gltf) => {
-          console.log(`✅ Model loaded successfully: ${path}`);
-          
-          // Log compression info
+          LOG && console.log(`✅ Model loaded successfully: ${p}`);
           if (gltf.userData?.compression) {
-            console.log(`📦 Compression used:`, gltf.userData.compression);
+            LOG && console.log(`📦 Compression used:`, gltf.userData.compression);
           }
-          
           resolve(gltf);
         },
         (progress) => {
           if (progress.lengthComputable) {
             const percent = Math.round((progress.loaded / progress.total) * 100);
-            console.log(`📁 Loading ${path}: ${percent}%`);
+            LOG && console.log(`📁 Loading ${p}: ${percent}%`);
           }
         },
         (error) => {
-          console.error(`❌ Failed to load model: ${path}`, error);
           reject(error);
         }
       );
     });
+
+    // Prefer an ".optimized.glb" if present; fall back to original path
+    const optimizedPath = this.getOptimizedModelPath(path);
+    try {
+      return await attemptLoad(optimizedPath);
+    } catch (e) {
+      // quiet
+      return attemptLoad(path);
+    }
   }
 
   /**
@@ -254,6 +260,15 @@ export class AssetLoader {
     }
     
     return originalPath;
+  }
+
+  /**
+   * Given a model path, return an ".optimized.glb" candidate in the same folder.
+   */
+  private getOptimizedModelPath(p: string): string {
+    if (/\.glb$/i.test(p)) return p.replace(/\.glb$/i, '.optimized.glb');
+    if (/\.gltf$/i.test(p)) return p.replace(/\.gltf$/i, '.optimized.glb');
+    return p + '.optimized.glb';
   }
 }
 

@@ -270,8 +270,7 @@ export function connect(): NetAPI {
           break;
         case 'positionCorrection':
           // Server rejected our position - accept the correction
-          console.log('🚫 Position corrected by server:', msg.reason);
-          console.log(`📍 New position: ${msg.x.toFixed(1)}, ${msg.y.toFixed(1)}, ${msg.z.toFixed(1)}`);
+          // quiet
           // The physics system should handle this by updating player body position
           window.dispatchEvent(new CustomEvent('serverPositionCorrection', { 
             detail: { x: msg.x, y: msg.y, z: msg.z, reason: msg.reason }
@@ -279,10 +278,7 @@ export function connect(): NetAPI {
           break;
         case 'combatError':
           // Server rejected our combat action
-          console.log('🚫 Combat action rejected:', msg.reason);
-          if (msg.cooldown) {
-            console.log(`⏱️ Cooldown remaining: ${msg.cooldown}ms`);
-          }
+          // quiet
           // Show error to user
           window.dispatchEvent(new CustomEvent('combatError', {
             detail: { reason: msg.reason, cooldown: msg.cooldown }
@@ -290,7 +286,7 @@ export function connect(): NetAPI {
           break;
         case 'playerDamaged':
           // We took damage from server authority
-          console.log(`💔 Took ${msg.damage} damage from player ${msg.source} (${msg.health}/${msg.maxHealth})`);
+          // quiet
           // Update local health state
           window.dispatchEvent(new CustomEvent('playerDamaged', {
             detail: { 
@@ -304,7 +300,7 @@ export function connect(): NetAPI {
           break;
         case 'projectileHit':
           // Our projectile hit someone
-          console.log(`🎯 Hit player ${msg.targetId} for ${msg.damage} damage!`);
+          // quiet
           // Play hit sound or show hit indicator
           window.dispatchEvent(new CustomEvent('projectileHit', {
             detail: { 
@@ -316,7 +312,7 @@ export function connect(): NetAPI {
           break;
         case 'hitEffect':
           // Someone got hit - show visual effect
-          console.log(`💥 Hit effect at ${msg.x.toFixed(1)}, ${msg.y.toFixed(1)}, ${msg.z.toFixed(1)}`);
+          // quiet
           window.dispatchEvent(new CustomEvent('hitEffect', {
             detail: {
               x: msg.x, y: msg.y, z: msg.z,
@@ -330,7 +326,7 @@ export function connect(): NetAPI {
           // Another player updated their avatar
           if (msg.playerId && msg.config) {
             store.playerAvatars.set(msg.playerId, msg.config);
-            console.log(`👗 Player ${msg.playerId} avatar updated:`, msg.config);
+            // quiet
             emit();
           }
           break;
@@ -377,7 +373,7 @@ const api: NetAPI = {
   },
   sendPosition(x: number, y: number, z: number, rotation?: number) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.log('⚠️ Cannot send position - WebSocket not open:', ws ? ws.readyState : 'null');
+      // quiet
       return;
     }
     const now = performance.now();
@@ -388,21 +384,13 @@ const api: NetAPI = {
       data.rotation = rotation;
     }
     
-    // DEBUG: Log every position send (temporarily)
-    if (Math.random() < 0.1) {
-      console.log('📡 SENDING POSITION:', {
-        position: `${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}`,
-        rotation: rotation ? `${(rotation * 180 / Math.PI).toFixed(0)}°` : 'none',
-        wsState: ws.readyState,
-        data: JSON.stringify(data).substring(0, 100)
-      });
-    }
+    // quiet
     
     ws.send(JSON.stringify(data));
   },
   sendProjectileCreate(projectile: Omit<ProjectileSnapshot, 'playerId'>) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    console.log('🚀 Sending projectile create:', projectile.type, projectile.id);
+    // quiet
     ws.send(JSON.stringify({ 
       t: 'projectileCreate', 
       projectile 
@@ -418,7 +406,7 @@ const api: NetAPI = {
   },
   sendProjectileDestroy(projectileId: string) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    console.log('💥 Sending projectile destroy:', projectileId);
+    // quiet
     ws.send(JSON.stringify({ 
       t: 'projectileDestroy', 
       id: projectileId 
@@ -426,7 +414,7 @@ const api: NetAPI = {
   },
   sendAvatarConfig(config: any) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    console.log('👗 Sending avatar config:', config);
+    // quiet
     ws.send(JSON.stringify({ 
       t: 'avatarUpdate', 
       config 
@@ -434,10 +422,10 @@ const api: NetAPI = {
   },
   joinRoom(room: string) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.error('❌ Cannot join room - WebSocket not connected');
+      // quiet
       return;
     }
-    console.log('🚪 Joining room:', room);
+    // quiet
     store.currentRoom = room;
     ws.send(JSON.stringify({ t: 'join', room }));
     emit();
